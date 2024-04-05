@@ -8,7 +8,7 @@ public class Ai_Project : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "WebSockets", "Json" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "WebSockets", "Json","Sockets", "Networking","EnhancedInput" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
