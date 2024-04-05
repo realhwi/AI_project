@@ -70,6 +70,8 @@ void AAI_Pawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	FString ReceivedData = TEXT("{...}"); // 네트워크에서 받은 JSON 문자열
+	ParseAndApplyHandTrackingData(ReceivedData);
 }
 
 // Called to bind functionality to input
@@ -91,40 +93,89 @@ void AAI_Pawn::RotateCamera(const FInputActionValue& Value)
 		Controller->SetControlRotation(NewRotation);
 	}
 }
-
-void AAI_Pawn::UpdateHandTracking(const FString& HandData)
+	
+FName AAI_Pawn::GetBoneNameFromLandmarkId(int32 LandmarkId) const
 {
-	// FName BoneName = GetBoneNameFromLandmarkId(LandmarkId, bIsLeftHand);
-	// if (BoneName.IsNone()) return;
-	//
-	// // 좌표 변환 로직 구현. 예를 들어, cm 단위로 스케일 조정 등
-	// FVector UnrealPosition = ConvertPositionToUnreal(Position);
-	//
-	// // 본 위치 업데이트. 이 예에서는 컴포넌트 공간에서의 위치 설정을 가정합니다.
-	// USkeletalMeshComponent* MeshComponent = GetMesh();
-	// if (MeshComponent)
-	// {
-	// 	MeshComponent->SetBoneLocationByName(BoneName, UnrealPosition, EBoneSpaces::ComponentSpace);
-	// }
+	switch (LandmarkId)
+	{
+	case 0: return FName(TEXT("wrist_inner_r"));
+	case 1: return FName(TEXT("thumb_01_r"));
+	case 2: return FName(TEXT("thumb_02_r"));
+	case 3: return FName(TEXT("thumb_03_r"));
+	case 5: return FName(TEXT("index_01_r"));
+	case 6: return FName(TEXT("index_02_r"));
+	case 7: return FName(TEXT("index_03_r"));
+	case 9: return FName(TEXT("middle_01_r"));
+	case 10: return FName(TEXT("middle_02_r"));
+	case 11: return FName(TEXT("middle_03_r"));
+	case 13: return FName(TEXT("pinky_01_r"));
+	case 14: return FName(TEXT("pinky_02_r"));
+	case 15: return FName(TEXT("pinky_03_r"));
+	case 17: return FName(TEXT("ring_01_r"));
+	case 18: return FName(TEXT("ring_02_r"));
+	case 19: return FName(TEXT("ring_03_r"));
+	default: return FName();
+	}
 }
 
-// 예시: Unreal Engine 좌표계로 변환하는 함수
-FVector ConvertToUnrealPosition(FVector PythonPosition)
+void AAI_Pawn::ParseAndApplyHandTrackingData(const FString& ReceivedData)
 {
-	// PythonPosition은 파이썬에서 전송된 랜드마크 위치
-	// 실제 좌표계 변환 로직을 구현해야 합니다.
-	return FVector(PythonPosition.X, PythonPosition.Y, PythonPosition.Z);
+	// JSON 파싱
+	TSharedPtr<FJsonObject> JsonObject;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ReceivedData);
+	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+	{
+		// JSON 데이터로부터 "hands" 배열을 추출
+		const TArray<TSharedPtr<FJsonValue>>* HandsArrayPtr = nullptr;
+		if (JsonObject->TryGetArrayField(TEXT("hands"), HandsArrayPtr) && HandsArrayPtr)
+		{
+			// 각 손에 대해 반복
+			const TArray<TSharedPtr<FJsonValue>>& HandsArray = *HandsArrayPtr;
+			for (const TSharedPtr<FJsonValue>& HandValue : HandsArray)
+			{
+				const TSharedPtr<FJsonObject>& HandObject = HandValue->AsObject();
+				const TArray<TSharedPtr<FJsonValue>>& LandmarksArray = HandObject->GetArrayField(TEXT("landmarks"));
+
+				for (const TSharedPtr<FJsonValue>& LandmarkValue : LandmarksArray)
+				{
+					const TSharedPtr<FJsonObject>& LandmarkObject = LandmarkValue->AsObject();
+					int32 Id = LandmarkObject->GetIntegerField(TEXT("id"));
+					float PythonX = LandmarkObject->GetNumberField(TEXT("x"));
+					float PythonY = LandmarkObject->GetNumberField(TEXT("y"));
+					// float PythonZ = LandmarkObject->GetNumberField(TEXT("z")); // 필요한 경우 사용
+
+					// 파이썬 좌표를 언리얼 좌표계로 변환
+					FVector UnrealPosition = ConvertPythonToUnreal(PythonX, PythonY);
+					
+					UE_LOG(LogTemp, Warning, TEXT("UnrealPosition:: %f,%f,%f,%f,%f"),PythonX, PythonY,UnrealPosition.X,UnrealPosition.Y,UnrealPosition.Z);
+				}
+			}
+		}
+	}
 }
 
-// 본의 위치를 업데이트하는 로직
-void UpdateBonePosition(FName BoneName, FVector NewPosition)
+FVector AAI_Pawn::ConvertPythonToUnreal(float PythonX, float PythonY)
 {
-	// // 예시 매핑. 실제 ID와 본 이름을 프로젝트에 맞게 조정해야 합니다.
-	// switch (LandmarkId)
-	// {
-	// case 0: return bIsLeftHand ? FName(TEXT("wrist_l")) : FName(TEXT("wrist_r"));
-	// case 4: return bIsLeftHand ? FName(TEXT("thumb_01_l")) : FName(TEXT("thumb_01_r"));
-	// 	// 다른 손가락 본에 대한 ID 매핑 추가...
-	// default: return FName();
-	// }
+	float PythonMinX = 0;
+	float PythonMaxX = 600;
+	float UnrealMinY = -30;
+	float UnrealMaxY = 30;
+	float PythonMinY = 0;
+	float PythonMaxY = 600;
+	float UnrealMinZ = -30;
+	float UnrealMaxZ = 30;
+
+	float UnrealY = ConvertPythonValueToUnreal(PythonX, PythonMinX, PythonMaxX, UnrealMinY, UnrealMaxY);
+	float UnrealZ = ConvertPythonValueToUnreal(PythonY, PythonMinY, PythonMaxY, UnrealMinZ, UnrealMaxZ);
+	float UnrealX = 0; // 예시에서 단순화를 위해 0으로 설정
+
+	return FVector(UnrealX, UnrealY, UnrealZ);
 }
+
+
+float AAI_Pawn::ConvertPythonValueToUnreal(float PythonValue, float PythonMin, float PythonMax, float UnrealMin, float UnrealMax)
+{
+    return (PythonValue - PythonMin) / (PythonMax - PythonMin) * (UnrealMax - UnrealMin) + UnrealMin;
+}
+
+	

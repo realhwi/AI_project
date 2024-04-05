@@ -29,7 +29,7 @@ void ASocketClient::Tick(float DeltaTime)
     FString ReceivedMessage;
     if(ReceiveData(ReceivedMessage))
     {
-        UE_LOG(LogTemp, Log, TEXT("Received message: %s"), *ReceivedMessage);
+        //UE_LOG(LogTemp, Log, TEXT("Received message: %s"), *ReceivedMessage);
     }
 }
 
@@ -41,6 +41,10 @@ void ASocketClient::ConnectToServer()
         if (Socket == nullptr) // 소켓이 아직 생성되지 않았다면 생성합니다.
         {
             Socket = SocketSubsystem->CreateSocket(NAME_Stream, TEXT("default"), false);
+            if (Socket == nullptr) {
+                //UE_LOG(LogTemp, Error, TEXT("Failed to create socket."));
+                return;
+            }
         }
 
         // 소켓이 성공적으로 생성되었는지 확인합니다.
@@ -115,14 +119,17 @@ bool ASocketClient::ReceiveData(FString& OutMessage)
     
     // 데이터를 수신하고 성공 여부를 반환합니다.
     bool bHasData = Socket->HasPendingData((uint32&)BytesRead);
-    if (bHasData && BytesRead > 0)
+    Socket->HasPendingData((uint32&)BytesRead); // 여기서는 uint32로 캐스팅하지 않습니다
+    if (BytesRead)
     {
+        bool bReceived = Socket->Recv(ReceiveBuffer, BufferSize, BytesRead, ESocketReceiveFlags::None);
         if (Socket->Recv(ReceiveBuffer, BufferSize, BytesRead)) // 수정: Reader를 사용하지 않고 직접 ReceiveBuffer에 데이터를 받습니다.
         {
             // 수신한 데이터를 FString으로 변환합니다.
             // null-terminator를 추가해야 합니다.
-            ReceiveBuffer[BytesRead] = '\0';
-            OutMessage = FString(ANSI_TO_TCHAR((char*)ReceiveBuffer)); // 수정: 직접 ANSI_TO_TCHAR를 사용합니다.
+            FString ReceivedString = FString(UTF8_TO_TCHAR(ReceiveBuffer));
+            OutMessage = ReceivedString;
+            //UE_LOG(LogTemp, Error, TEXT("%s"), *OutMessage)
             return true;
         }
     }

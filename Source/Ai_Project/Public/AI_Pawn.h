@@ -44,7 +44,10 @@ public:
 	class USkeletalMeshComponent* RightHandMesh;
 
 	void RotateCamera(const FInputActionValue& Value);
-
-	void UpdateHandTracking(const FString& HandData);
+	FName GetBoneNameFromLandmarkId(int32 LandmarkId) const;
+	void ParseAndApplyHandTrackingData(const FString& ReceivedData);
 	
+	FVector ConvertPythonToUnreal(float PythonX, float PythonY);
+	float ConvertPythonValueToUnreal(float PythonValue, float PythonMin, float PythonMax, float UnrealMin, float UnrealMax);
+
 };
