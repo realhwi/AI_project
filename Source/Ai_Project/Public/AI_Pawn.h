@@ -50,4 +50,5 @@ public:
 	FVector ConvertPythonToUnreal(float PythonX, float PythonY);
 	float ConvertPythonValueToUnreal(float PythonValue, float PythonMin, float PythonMax, float UnrealMin, float UnrealMax);
 
+	void UpdateHandMeshPosition(int32 Id, const FVector& NewPosition);
 };

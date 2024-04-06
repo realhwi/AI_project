@@ -30,23 +30,23 @@ AAI_Pawn::AAI_Pawn()
 	CameraComponent->bUsePawnControlRotation = false;
 
 	FVector HandRelativeLocation = FVector(0, 0, -60);
-
+	
 	//Hand Mesh
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> LeftHandMeshAsset(TEXT("/Script/Engine.SkeletalMesh'/Game/Characters/MannequinsXR/Meshes/SKM_MannyXR_left.SKM_MannyXR_left'"));
 	if (LeftHandMeshAsset.Succeeded())
 	{
 		LeftHandMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Left Hand Mesh"));
 		LeftHandMesh->SetSkeletalMesh(LeftHandMeshAsset.Object);
-		LeftHandMesh->SetupAttachment(CameraComponent);
-		LeftHandMesh->SetRelativeLocation(HandRelativeLocation);
+		LeftHandMesh->SetupAttachment(SpringArmComponent);
+        LeftHandMesh->SetRelativeLocation(FVector(20,-20, 0));
 	}
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> RightHandMeshAsset(TEXT("/Script/Engine.SkeletalMesh'/Game/Characters/MannequinsXR/Meshes/SKM_MannyXR_right.SKM_MannyXR_right'"));
 	if (RightHandMeshAsset.Succeeded())
 	{
 		RightHandMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Right Hand Mesh"));
 		RightHandMesh->SetSkeletalMesh(RightHandMeshAsset.Object);
-		RightHandMesh->SetupAttachment(CameraComponent);
-		RightHandMesh->SetRelativeLocation(HandRelativeLocation);
+		RightHandMesh->SetupAttachment(SpringArmComponent);
+        RightHandMesh->SetRelativeLocation(FVector(20,-20, 0));
 	}
 }
 
@@ -62,7 +62,14 @@ void AAI_Pawn::BeginPlay()
 			Subsystem->AddMappingContext( IMC_AI , 0 );
 		}
 	}
-	
+	if (LeftHandMesh && RightHandMesh)
+	{
+		FVector LeftHandLocation = LeftHandMesh->GetComponentLocation();
+		FVector RightHandLocation = RightHandMesh->GetComponentLocation();
+        
+		UE_LOG(LogTemp, Log, TEXT("Left Hand Mesh Location: %s"), *LeftHandLocation.ToString());
+		UE_LOG(LogTemp, Log, TEXT("Right Hand Mesh Location: %s"), *RightHandLocation.ToString());
+	}
 }
 
 // Called every frame
@@ -70,7 +77,7 @@ void AAI_Pawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	FString ReceivedData = TEXT("{...}"); // 네트워크에서 받은 JSON 문자열
+    FString ReceivedData = TEXT("{\"hands\":[{\"landmarks\":[{\"id\":0,\"x\":0.5,\"y\":0.5},{\"id\":1,\"x\":0.6,\"y\":0.6}]}]}");
 	ParseAndApplyHandTrackingData(ReceivedData);
 }
 
@@ -120,21 +127,22 @@ FName AAI_Pawn::GetBoneNameFromLandmarkId(int32 LandmarkId) const
 
 void AAI_Pawn::ParseAndApplyHandTrackingData(const FString& ReceivedData)
 {
-	// JSON 파싱
+	UE_LOG(LogTemp, Log, TEXT("ParseAndApplyHandTrackingData called with data: %s"), *ReceivedData);
+
 	TSharedPtr<FJsonObject> JsonObject;
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ReceivedData);
 	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
 	{
-		// JSON 데이터로부터 "hands" 배열을 추출
+		UE_LOG(LogTemp, Log, TEXT("JSON parsing successful."));
+
 		const TArray<TSharedPtr<FJsonValue>>* HandsArrayPtr = nullptr;
-		if (JsonObject->TryGetArrayField(TEXT("hands"), HandsArrayPtr) && HandsArrayPtr)
+		if (JsonObject->TryGetArrayField(TEXT("hands"), HandsArrayPtr))
 		{
-			// 각 손에 대해 반복
-			const TArray<TSharedPtr<FJsonValue>>& HandsArray = *HandsArrayPtr;
-			for (const TSharedPtr<FJsonValue>& HandValue : HandsArray)
+			UE_LOG(LogTemp, Log, TEXT("Found 'hands' array in JSON."));
+
+			for (const TSharedPtr<FJsonValue>& HandValue : *HandsArrayPtr)
 			{
-				const TSharedPtr<FJsonObject>& HandObject = HandValue->AsObject();
-				const TArray<TSharedPtr<FJsonValue>>& LandmarksArray = HandObject->GetArrayField(TEXT("landmarks"));
+				const TArray<TSharedPtr<FJsonValue>>& LandmarksArray = HandValue->AsObject()->GetArrayField(TEXT("landmarks"));
 
 				for (const TSharedPtr<FJsonValue>& LandmarkValue : LandmarksArray)
 				{
@@ -142,34 +150,35 @@ void AAI_Pawn::ParseAndApplyHandTrackingData(const FString& ReceivedData)
 					int32 Id = LandmarkObject->GetIntegerField(TEXT("id"));
 					float PythonX = LandmarkObject->GetNumberField(TEXT("x"));
 					float PythonY = LandmarkObject->GetNumberField(TEXT("y"));
-					// float PythonZ = LandmarkObject->GetNumberField(TEXT("z")); // 필요한 경우 사용
 
-					// 파이썬 좌표를 언리얼 좌표계로 변환
 					FVector UnrealPosition = ConvertPythonToUnreal(PythonX, PythonY);
-					
-					UE_LOG(LogTemp, Warning, TEXT("UnrealPosition:: %f,%f,%f,%f,%f"),PythonX, PythonY,UnrealPosition.X,UnrealPosition.Y,UnrealPosition.Z);
+					UpdateHandMeshPosition(Id, UnrealPosition);
+					UE_LOG(LogTemp, Log, TEXT("Landmark %d: UnrealPosition = (%f, %f, %f)"), Id, UnrealPosition.X, UnrealPosition.Y, UnrealPosition.Z);
 				}
 			}
 		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("No 'hands' array found in JSON."));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to parse JSON."));
 	}
 }
 
 FVector AAI_Pawn::ConvertPythonToUnreal(float PythonX, float PythonY)
 {
-	float PythonMinX = 0;
-	float PythonMaxX = 600;
-	float UnrealMinY = -30;
-	float UnrealMaxY = 30;
-	float PythonMinY = 0;
-	float PythonMaxY = 600;
-	float UnrealMinZ = -30;
-	float UnrealMaxZ = 30;
+	float PythonMinX = 0.0f, PythonMaxX = 600.0f;
+	float PythonMinY = 0.0f, PythonMaxY = 600.0f;
+	float UnrealMinY = -30.0f, UnrealMaxY = 30.0f;
+	float UnrealMinZ = -30.0f, UnrealMaxZ = 30.0f;
 
-	float UnrealY = ConvertPythonValueToUnreal(PythonX, PythonMinX, PythonMaxX, UnrealMinY, UnrealMaxY);
-	float UnrealZ = ConvertPythonValueToUnreal(PythonY, PythonMinY, PythonMaxY, UnrealMinZ, UnrealMaxZ);
-	float UnrealX = 0; // 예시에서 단순화를 위해 0으로 설정
+	float UnrealY = FMath::GetMappedRangeValueClamped(FVector2D(PythonMinX, PythonMaxX), FVector2D(UnrealMinY, UnrealMaxY), PythonX);
+	float UnrealZ = FMath::GetMappedRangeValueClamped(FVector2D(PythonMinY, PythonMaxY), FVector2D(UnrealMinZ, UnrealMaxZ), PythonY);
 
-	return FVector(UnrealX, UnrealY, UnrealZ);
+	return FVector(0.0f, UnrealY, UnrealZ);
 }
 
 
@@ -178,4 +187,32 @@ float AAI_Pawn::ConvertPythonValueToUnreal(float PythonValue, float PythonMin, f
     return (PythonValue - PythonMin) / (PythonMax - PythonMin) * (UnrealMax - UnrealMin) + UnrealMin;
 }
 
-	
+void AAI_Pawn::UpdateHandMeshPosition(int32 Id, const FVector& NewPosition)
+{
+	if (Id == 0) // 왼손의 특정 랜드마크 ID, 실제 ID 값에 따라 조정
+	{
+		if (LeftHandMesh)
+		{
+			LeftHandMesh->SetWorldLocation(NewPosition);
+		}
+	}
+	else if (Id == 1) // 오른손의 특정 랜드마크 ID, 실제 ID 값에 따라 조정
+	{
+		if (RightHandMesh)
+		{
+			RightHandMesh->SetWorldLocation(NewPosition);
+		}
+	}
+
+	if (LeftHandMesh)
+	{
+		FVector LeftHandWorldLocation = LeftHandMesh->GetComponentLocation();
+		UE_LOG(LogTemp, Log, TEXT("Left Hand Mesh World Location: %s"), *LeftHandWorldLocation.ToString());
+	}
+
+	if (RightHandMesh)
+	{
+		FVector RightHandWorldLocation = RightHandMesh->GetComponentLocation();
+		UE_LOG(LogTemp, Log, TEXT("Right Hand Mesh World Location: %s"), *RightHandWorldLocation.ToString());
+	}
+}
