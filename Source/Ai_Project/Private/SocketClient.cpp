@@ -29,7 +29,7 @@ void ASocketClient::Tick(float DeltaTime)
     FString ReceivedMessage;
     if(ReceiveData(ReceivedMessage))
     {
-        //UE_LOG(LogTemp, Log, TEXT("Received message: %s"), *ReceivedMessage);
+        UE_LOG(LogTemp, Log, TEXT("Received message: %s"), *ReceivedMessage);
     }
 }
 
@@ -129,7 +129,7 @@ bool ASocketClient::ReceiveData(FString& OutMessage)
             // null-terminator를 추가해야 합니다.
             FString ReceivedString = FString(UTF8_TO_TCHAR(ReceiveBuffer));
             OutMessage = ReceivedString;
-            //UE_LOG(LogTemp, Error, TEXT("%s"), *OutMessage)
+            UE_LOG(LogTemp, Error, TEXT("%s"), *OutMessage)
             return true;
         }
     }

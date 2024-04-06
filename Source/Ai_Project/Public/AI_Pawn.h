@@ -47,8 +47,11 @@ public:
 	FName GetBoneNameFromLandmarkId(int32 LandmarkId) const;
 	void ParseAndApplyHandTrackingData(const FString& ReceivedData);
 	
-	FVector ConvertPythonToUnreal(float PythonX, float PythonY);
-	float ConvertPythonValueToUnreal(float PythonValue, float PythonMin, float PythonMax, float UnrealMin, float UnrealMax);
+	FVector ConvertPythonToUnreal(float PixelX, float PixelY, float PixelZ);
+	float ConvertPythonValueToUnreal(float PythonX, float PythonY, float PythonZ);
 
 	void UpdateHandMeshPosition(int32 Id, const FVector& NewPosition);
+
+	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
+	void UpdateBonePosition(FName BoneName, const FVector& NewPosition);
 };

@@ -6,8 +6,6 @@
 #include "EnhancedInputSubsystems.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h" 
-#include "EnhancedInputSubsystems.h"
-#include "MotionControllerComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 
 
@@ -37,16 +35,16 @@ AAI_Pawn::AAI_Pawn()
 	{
 		LeftHandMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Left Hand Mesh"));
 		LeftHandMesh->SetSkeletalMesh(LeftHandMeshAsset.Object);
-		LeftHandMesh->SetupAttachment(SpringArmComponent);
-        LeftHandMesh->SetRelativeLocation(FVector(20,-20, 0));
+		LeftHandMesh->SetupAttachment(CameraComponent);
+		LeftHandMesh->SetRelativeLocation(HandRelativeLocation);
 	}
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> RightHandMeshAsset(TEXT("/Script/Engine.SkeletalMesh'/Game/Characters/MannequinsXR/Meshes/SKM_MannyXR_right.SKM_MannyXR_right'"));
 	if (RightHandMeshAsset.Succeeded())
 	{
 		RightHandMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Right Hand Mesh"));
 		RightHandMesh->SetSkeletalMesh(RightHandMeshAsset.Object);
-		RightHandMesh->SetupAttachment(SpringArmComponent);
-        RightHandMesh->SetRelativeLocation(FVector(20,-20, 0));
+		RightHandMesh->SetupAttachment(CameraComponent);
+		RightHandMesh->SetRelativeLocation(HandRelativeLocation);
 	}
 }
 
@@ -76,9 +74,16 @@ void AAI_Pawn::BeginPlay()
 void AAI_Pawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	FName HandBoneName = "Hand_R";
+	
     FString ReceivedData = TEXT("{\"hands\":[{\"landmarks\":[{\"id\":0,\"x\":0.5,\"y\":0.5},{\"id\":1,\"x\":0.6,\"y\":0.6}]}]}");
 	ParseAndApplyHandTrackingData(ReceivedData);
+
+	/*// 이 액터의 현재 위치를 가져옵니다.
+	FVector CurrentLocation = GetActorLocation();
+
+	// 로그에 위치 정보를 출력합니다.
+	UE_LOG(LogTemp, Log, TEXT("Actor's Current Location: %s"), *CurrentLocation.ToString());*/
 }
 
 // Called to bind functionality to input
@@ -121,7 +126,7 @@ FName AAI_Pawn::GetBoneNameFromLandmarkId(int32 LandmarkId) const
 	case 17: return FName(TEXT("ring_01_r"));
 	case 18: return FName(TEXT("ring_02_r"));
 	case 19: return FName(TEXT("ring_03_r"));
-	default: return FName();
+	default: return FName(); // ID가 매핑되지 않은 경우, 빈 FName 반환
 	}
 }
 
@@ -131,88 +136,86 @@ void AAI_Pawn::ParseAndApplyHandTrackingData(const FString& ReceivedData)
 
 	TSharedPtr<FJsonObject> JsonObject;
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ReceivedData);
+
 	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
 	{
-		UE_LOG(LogTemp, Log, TEXT("JSON parsing successful."));
-
-		const TArray<TSharedPtr<FJsonValue>>* HandsArrayPtr = nullptr;
-		if (JsonObject->TryGetArrayField(TEXT("hands"), HandsArrayPtr))
+		const TArray<TSharedPtr<FJsonValue>>* HandsArray;
+		if (JsonObject->TryGetArrayField(TEXT("hands"), HandsArray))
 		{
-			UE_LOG(LogTemp, Log, TEXT("Found 'hands' array in JSON."));
-
-			for (const TSharedPtr<FJsonValue>& HandValue : *HandsArrayPtr)
+			for (const TSharedPtr<FJsonValue>& HandValue : *HandsArray)
 			{
-				const TArray<TSharedPtr<FJsonValue>>& LandmarksArray = HandValue->AsObject()->GetArrayField(TEXT("landmarks"));
-
-				for (const TSharedPtr<FJsonValue>& LandmarkValue : LandmarksArray)
+				const TArray<TSharedPtr<FJsonValue>>& Landmarks = HandValue->AsObject()->GetArrayField(TEXT("landmarks"));
+				for (const TSharedPtr<FJsonValue>& Landmark : Landmarks)
 				{
-					const TSharedPtr<FJsonObject>& LandmarkObject = LandmarkValue->AsObject();
-					int32 Id = LandmarkObject->GetIntegerField(TEXT("id"));
-					float PythonX = LandmarkObject->GetNumberField(TEXT("x"));
-					float PythonY = LandmarkObject->GetNumberField(TEXT("y"));
+					TSharedPtr<FJsonObject> LandmarkObj = Landmark->AsObject();
+					int32 Id = LandmarkObj->GetIntegerField(TEXT("id"));
+					float X = LandmarkObj->GetNumberField(TEXT("x"));
+					float Y = LandmarkObj->GetNumberField(TEXT("y"));
+					float Z = 0.0f; // 예제에서는 Z 좌표를 0으로 설정
 
-					FVector UnrealPosition = ConvertPythonToUnreal(PythonX, PythonY);
+					// Mediapipe 좌표를 언리얼 좌표계로 변환
+					FVector UnrealPosition = ConvertPythonToUnreal(X, Y, Z);
+					
+					UE_LOG(LogTemp, Log, TEXT("Landmark ID: %d, Pixel Coordinates: (X=%f, Y=%f), Unreal Coordinates: %s"), Id, X, Y, *UnrealPosition.ToString());
+
+					FName BoneName = GetBoneNameFromLandmarkId(Id);
+					if (!BoneName.IsNone())
+					{
+						// 여기서 BoneName.ToString()을 로그로 출력할 수 있습니다.
+						UE_LOG(LogTemp, Log, TEXT("Updating Bone: %s"), *BoneName.ToString());
+    
+						// Id를 사용하여 UpdateHandMeshPosition을 호출
+						UpdateHandMeshPosition(Id, UnrealPosition);
+					}
+					else
+					{
+						UE_LOG(LogTemp, Warning, TEXT("Bone name not found for Landmark ID: %d"), Id);
+					}
+
+					// Bone 위치 업데이트
 					UpdateHandMeshPosition(Id, UnrealPosition);
-					UE_LOG(LogTemp, Log, TEXT("Landmark %d: UnrealPosition = (%f, %f, %f)"), Id, UnrealPosition.X, UnrealPosition.Y, UnrealPosition.Z);
 				}
 			}
 		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("No 'hands' array found in JSON."));
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to parse JSON."));
 	}
 }
 
-FVector AAI_Pawn::ConvertPythonToUnreal(float PythonX, float PythonY)
+const float PixelScale = 0.01f; // 가정: 한 픽셀이 1cm를 나타냄
+FVector AAI_Pawn::ConvertPythonToUnreal(float PixelX, float PixelY, float PixelZ)
 {
-	float PythonMinX = 0.0f, PythonMaxX = 600.0f;
-	float PythonMinY = 0.0f, PythonMaxY = 600.0f;
-	float UnrealMinY = -30.0f, UnrealMaxY = 30.0f;
-	float UnrealMinZ = -30.0f, UnrealMaxZ = 30.0f;
+	// 웹캠 해상도의 중앙에서 언리얼 월드 스케일로의 변환
+	// 웹캠 해상도의 중앙을 (0,0)으로 가정하고 변환합니다.
+	float CenterX = 300.0f; // 600x600 해상도의 중앙 X 좌표
+	float CenterY = 300.0f; // 600x600 해상도의 중앙 Y 좌표
 
-	float UnrealY = FMath::GetMappedRangeValueClamped(FVector2D(PythonMinX, PythonMaxX), FVector2D(UnrealMinY, UnrealMaxY), PythonX);
-	float UnrealZ = FMath::GetMappedRangeValueClamped(FVector2D(PythonMinY, PythonMaxY), FVector2D(UnrealMinZ, UnrealMaxZ), PythonY);
+	// 픽셀 좌표에서 중앙을 빼고 스케일 비율을 곱해서 언리얼의 위치로 변환합니다.
+	float UnrealX = (PixelX - CenterX) * PixelScale;
+	float UnrealY = (PixelY - CenterY) * PixelScale;
+	// Z는 예시로 0을 사용합니다. 실제 애플리케이션에서는 적절한 값을 사용해야 합니다.
+	float UnrealZ = 0.0f;
 
-	return FVector(0.0f, UnrealY, UnrealZ);
-}
-
-
-float AAI_Pawn::ConvertPythonValueToUnreal(float PythonValue, float PythonMin, float PythonMax, float UnrealMin, float UnrealMax)
-{
-    return (PythonValue - PythonMin) / (PythonMax - PythonMin) * (UnrealMax - UnrealMin) + UnrealMin;
+	return FVector(UnrealX, UnrealY, UnrealZ);
 }
 
 void AAI_Pawn::UpdateHandMeshPosition(int32 Id, const FVector& NewPosition)
 {
-	if (Id == 0) // 왼손의 특정 랜드마크 ID, 실제 ID 값에 따라 조정
+	USkeletalMeshComponent* HandMesh = (Id == 0) ? LeftHandMesh : RightHandMesh;
+	if (HandMesh)
 	{
-		if (LeftHandMesh)
-		{
-			LeftHandMesh->SetWorldLocation(NewPosition);
-		}
+		HandMesh->SetWorldLocation(NewPosition, false, nullptr, ETeleportType::TeleportPhysics);
 	}
-	else if (Id == 1) // 오른손의 특정 랜드마크 ID, 실제 ID 값에 따라 조정
-	{
-		if (RightHandMesh)
-		{
-			RightHandMesh->SetWorldLocation(NewPosition);
-		}
-	}
+}
 
-	if (LeftHandMesh)
+void AAI_Pawn::UpdateBonePosition(FName BoneName, const FVector& NewPosition)
+{
+	// UAnimInstance를 사용하여 애니메이션 블루프린트에 IK 타겟 위치를 설정
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
 	{
-		FVector LeftHandWorldLocation = LeftHandMesh->GetComponentLocation();
-		UE_LOG(LogTemp, Log, TEXT("Left Hand Mesh World Location: %s"), *LeftHandWorldLocation.ToString());
-	}
-
-	if (RightHandMesh)
-	{
-		FVector RightHandWorldLocation = RightHandMesh->GetComponentLocation();
-		UE_LOG(LogTemp, Log, TEXT("Right Hand Mesh World Location: %s"), *RightHandWorldLocation.ToString());
+		if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
+		{
+			// 여기서는 예시로 AnimInstance에 직접적인 함수 호출은 없으며,
+			// 실제 구현은 애니메이션 블루프린트와의 인터페이스를 통해 이루어져야 합니다.
+			// 예: AnimInstance->SetIKTargetPosition(TargetPosition); 가정
+		}
 	}
 }
