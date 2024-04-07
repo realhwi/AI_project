@@ -53,6 +53,7 @@ void AAI_Pawn::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// 인풋 매핑 컨트롤 
 	if (APlayerController* PlayerController = Cast<APlayerController>( Controller ))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>( PlayerController->GetLocalPlayer() ))
@@ -60,6 +61,7 @@ void AAI_Pawn::BeginPlay()
 			Subsystem->AddMappingContext( IMC_AI , 0 );
 		}
 	}
+	// 
 	if (LeftHandMesh && RightHandMesh)
 	{
 		FVector LeftHandLocation = LeftHandMesh->GetComponentLocation();
@@ -78,12 +80,6 @@ void AAI_Pawn::Tick(float DeltaTime)
 	
     FString ReceivedData = TEXT("{\"hands\":[{\"landmarks\":[{\"id\":0,\"x\":0.5,\"y\":0.5},{\"id\":1,\"x\":0.6,\"y\":0.6}]}]}");
 	ParseAndApplyHandTrackingData(ReceivedData);
-
-	/*// 이 액터의 현재 위치를 가져옵니다.
-	FVector CurrentLocation = GetActorLocation();
-
-	// 로그에 위치 정보를 출력합니다.
-	UE_LOG(LogTemp, Log, TEXT("Actor's Current Location: %s"), *CurrentLocation.ToString());*/
 }
 
 // Called to bind functionality to input
@@ -132,6 +128,7 @@ FName AAI_Pawn::GetBoneNameFromLandmarkId(int32 LandmarkId) const
 
 void AAI_Pawn::ParseAndApplyHandTrackingData(const FString& ReceivedData)
 {
+	// JSON 데이터를 변환하여 핸드 랜드마크 ID랑 좌표 추출해서 언리얼 엔진 월드 좌표로 변환 
 	UE_LOG(LogTemp, Log, TEXT("ParseAndApplyHandTrackingData called with data: %s"), *ReceivedData);
 
 	TSharedPtr<FJsonObject> JsonObject;
@@ -173,49 +170,39 @@ void AAI_Pawn::ParseAndApplyHandTrackingData(const FString& ReceivedData)
 					}
 
 					// Bone 위치 업데이트
-					UpdateHandMeshPosition(Id, UnrealPosition);
+					LandmarkIdToPositionMap.Add(Id, UnrealPosition); // 여기에 추가				
 				}
 			}
 		}
 	}
 }
 
-const float PixelScale = 0.01f; // 가정: 한 픽셀이 1cm를 나타냄
 FVector AAI_Pawn::ConvertPythonToUnreal(float PixelX, float PixelY, float PixelZ)
 {
-	// 웹캠 해상도의 중앙에서 언리얼 월드 스케일로의 변환
-	// 웹캠 해상도의 중앙을 (0,0)으로 가정하고 변환합니다.
-	float CenterX = 300.0f; // 600x600 해상도의 중앙 X 좌표
-	float CenterY = 300.0f; // 600x600 해상도의 중앙 Y 좌표
+    // 스케일을 조정할 상수입니다. 클래스 멤버 변수가 아니라면 이름을 구체적으로 명시하는 것이 좋습니다.
+    const float ConversionScale = 100.0f; 
+    const float CenterX = 0.5f; 
+    const float CenterY = 0.5f;
 
-	// 픽셀 좌표에서 중앙을 빼고 스케일 비율을 곱해서 언리얼의 위치로 변환합니다.
-	float UnrealX = (PixelX - CenterX) * PixelScale;
-	float UnrealY = (PixelY - CenterY) * PixelScale;
-	// Z는 예시로 0을 사용합니다. 실제 애플리케이션에서는 적절한 값을 사용해야 합니다.
-	float UnrealZ = 0.0f;
+    float UnrealX = (PixelX - CenterX) * ConversionScale;
+    float UnrealY = (PixelY - CenterY) * ConversionScale;
+    float UnrealZ = PixelZ * ConversionScale;
 
-	return FVector(UnrealX, UnrealY, UnrealZ);
+    return FVector(UnrealX, UnrealY, UnrealZ);
 }
-
+	
 void AAI_Pawn::UpdateHandMeshPosition(int32 Id, const FVector& NewPosition)
 {
-	USkeletalMeshComponent* HandMesh = (Id == 0) ? LeftHandMesh : RightHandMesh;
-	if (HandMesh)
-	{
-		HandMesh->SetWorldLocation(NewPosition, false, nullptr, ETeleportType::TeleportPhysics);
-	}
+    USkeletalMeshComponent* HandMesh = (Id == 0) ? LeftHandMesh : RightHandMesh;
+    if (HandMesh)
+    {
+        HandMesh->SetWorldLocation(NewPosition, false, nullptr, ETeleportType::TeleportPhysics);
+    }
+}
+	
+FVector AAI_Pawn::GetPositionForLandmarkId(int32 LandmarkId) const
+{
+	const FVector* FoundPosition = LandmarkIdToPositionMap.Find(LandmarkId);
+	return FoundPosition ? *FoundPosition : FVector::ZeroVector;
 }
 
-void AAI_Pawn::UpdateBonePosition(FName BoneName, const FVector& NewPosition)
-{
-	// UAnimInstance를 사용하여 애니메이션 블루프린트에 IK 타겟 위치를 설정
-	if (USkeletalMeshComponent* MeshComp = GetMesh())
-	{
-		if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
-		{
-			// 여기서는 예시로 AnimInstance에 직접적인 함수 호출은 없으며,
-			// 실제 구현은 애니메이션 블루프린트와의 인터페이스를 통해 이루어져야 합니다.
-			// 예: AnimInstance->SetIKTargetPosition(TargetPosition); 가정
-		}
-	}
-}
