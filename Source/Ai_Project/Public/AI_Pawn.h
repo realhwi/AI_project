@@ -70,5 +70,7 @@ public:
 
 	FVector GetPositionForLandmarkId(int32 LandmarkId) const;
 
-
+	FVector ReferencePosition; // 기준점 위치
+	bool bHasReference = false; // 기준점이 설정되었는지 여부
+	
 };

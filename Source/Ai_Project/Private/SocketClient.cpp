@@ -113,7 +113,7 @@ bool ASocketClient::ReceiveData(FString& OutMessage)
     }
 
     // 버퍼 사이즈를 정의합니다.
-    const int32 BufferSize = 1024;
+    const int32 BufferSize = 16384;
     uint8 ReceiveBuffer[BufferSize];
     int32 BytesRead = 0;
     

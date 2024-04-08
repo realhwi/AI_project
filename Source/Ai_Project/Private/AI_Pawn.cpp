@@ -52,7 +52,10 @@ AAI_Pawn::AAI_Pawn()
 void AAI_Pawn::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
+	ReferencePosition = FVector::ZeroVector;
+	bHasReference = false;
+	
 	// 인풋 매핑 컨트롤 
 	if (APlayerController* PlayerController = Cast<APlayerController>( Controller ))
 	{
@@ -66,6 +69,13 @@ void AAI_Pawn::BeginPlay()
 	{
 		FVector LeftHandLocation = LeftHandMesh->GetComponentLocation();
 		FVector RightHandLocation = RightHandMesh->GetComponentLocation();
+		FVector CameraLocation = CameraComponent->GetComponentLocation();
+		FRotator CameraRotation = CameraComponent->GetComponentRotation();
+		// 카메라의 정면 방향 벡터를 가져옵니다.
+		FVector ForwardVector = CameraRotation.Vector();
+
+		// 카메라 위치에서 정면 방향으로 30cm만큼 떨어진 위치를 계산합니다.
+		FVector StartPosition = CameraLocation + (ForwardVector * 30.0f);
         
 		UE_LOG(LogTemp, Log, TEXT("Left Hand Mesh Location: %s"), *LeftHandLocation.ToString());
 		UE_LOG(LogTemp, Log, TEXT("Right Hand Mesh Location: %s"), *RightHandLocation.ToString());
@@ -76,8 +86,13 @@ void AAI_Pawn::BeginPlay()
 void AAI_Pawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	FName HandBoneName = "Hand_R";
 	
+	if (bHasReference)
+	{
+		// 기준점을 사용하여 각 랜드마크의 위치를 업데이트합니다.
+		// 여기서는 예시로 핸드 메시의 손목 본 위치를 가져옵니다.
+		ReferencePosition = RightHandMesh->GetSocketLocation(TEXT("wrist_inner_r"));
+	}
     FString ReceivedData = TEXT("{\"hands\":[{\"landmarks\":[{\"id\":0,\"x\":0.5,\"y\":0.5},{\"id\":1,\"x\":0.6,\"y\":0.6}]}]}");
 	ParseAndApplyHandTrackingData(ReceivedData);
 }
@@ -152,28 +167,40 @@ void AAI_Pawn::ParseAndApplyHandTrackingData(const FString& ReceivedData)
 
 					// Mediapipe 좌표를 언리얼 좌표계로 변환
 					FVector UnrealPosition = ConvertPythonToUnreal(X, Y, Z);
-					
+					FName BoneName = GetBoneNameFromLandmarkId(Id);
 					UE_LOG(LogTemp, Log, TEXT("Landmark ID: %d, Pixel Coordinates: (X=%f, Y=%f), Unreal Coordinates: %s"), Id, X, Y, *UnrealPosition.ToString());
 
-					FName BoneName = GetBoneNameFromLandmarkId(Id);
+					if (Id == 0) // ID 0이 기준점이라고 가정
+					{
+						ReferencePosition = UnrealPosition; // 기준 위치를 설정
+						bHasReference = true; // 기준점 설정 플래그를 참으로 설정
+					}
+					else if (bHasReference) // 기준점을 기준으로 상대적 위치를 계산
+					{
+						UnrealPosition -= ReferencePosition;
+					}
+
 					if (!BoneName.IsNone())
 					{
 						// 여기서 BoneName.ToString()을 로그로 출력할 수 있습니다.
 						UE_LOG(LogTemp, Log, TEXT("Updating Bone: %s"), *BoneName.ToString());
-    
-						// Id를 사용하여 UpdateHandMeshPosition을 호출
 						UpdateHandMeshPosition(Id, UnrealPosition);
+						LandmarkIdToPositionMap.Add(Id, UnrealPosition);
 					}
-					else
-					{
-						UE_LOG(LogTemp, Warning, TEXT("Bone name not found for Landmark ID: %d"), Id);
-					}
-
-					// Bone 위치 업데이트
-					LandmarkIdToPositionMap.Add(Id, UnrealPosition); // 여기에 추가				
 				}
 			}
 		}
+	}
+}
+
+void AAI_Pawn::UpdateHandMeshPosition(int32 Id, const FVector& NewPosition)
+{
+	USkeletalMeshComponent* HandMesh = (Id == 0) ? LeftHandMesh : RightHandMesh;
+	if (HandMesh)
+	{
+		// 메시를 본의 상대적 위치로 이동시킵니다.
+		FVector LocalPosition = (Id == 0) ? NewPosition : NewPosition * -1.f; // 오른손과 왼손의 좌표 미러링
+		HandMesh->SetRelativeLocation(LocalPosition);
 	}
 }
 
@@ -183,23 +210,22 @@ FVector AAI_Pawn::ConvertPythonToUnreal(float PixelX, float PixelY, float PixelZ
     const float ConversionScale = 100.0f; 
     const float CenterX = 0.5f; 
     const float CenterY = 0.5f;
+	const float ConversionScaleZ = 1.0f; 
 
+	
     float UnrealX = (PixelX - CenterX) * ConversionScale;
     float UnrealY = (PixelY - CenterY) * ConversionScale;
-    float UnrealZ = PixelZ * ConversionScale;
+    float UnrealZ = PixelZ * ConversionScaleZ; // z값 스케일을 찾기 위한 로그 찍기 
 
     return FVector(UnrealX, UnrealY, UnrealZ);
 }
-	
-void AAI_Pawn::UpdateHandMeshPosition(int32 Id, const FVector& NewPosition)
+
+FVector AAI_Pawn::GetHandPosition(int32 HandId, FName BoneName)
 {
-    USkeletalMeshComponent* HandMesh = (Id == 0) ? LeftHandMesh : RightHandMesh;
-    if (HandMesh)
-    {
-        HandMesh->SetWorldLocation(NewPosition, false, nullptr, ETeleportType::TeleportPhysics);
-    }
+	//TODO:
+	return FVector();
 }
-	
+
 FVector AAI_Pawn::GetPositionForLandmarkId(int32 LandmarkId) const
 {
 	const FVector* FoundPosition = LandmarkIdToPositionMap.Find(LandmarkId);

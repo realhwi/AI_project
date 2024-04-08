@@ -4,13 +4,14 @@
 #include "AI_Anim.h"
 #include "AI_Pawn.h"
 
-DEFINE_LOG_CATEGORY(LogMyAnimInstance);
+//DEFINE_LOG_CATEGORY(LogMyAnimInstance);
 
-void UMyAnimInstance::NativeUpdateAnimation(float DeltaTime)
+/*
+void UAI_Anim::NativeUpdateAnimation(float DeltaTime)
 {
 	Super::NativeUpdateAnimation(DeltaTime);
 
-	AAI_Pawn* Pawn = Cast<AAI_Pawn>(TryGetPawnOwner());
+	/*AAI_Pawn* Pawn = Cast<AAI_Pawn>(TryGetPawnOwner());
 	if (Pawn)
 	{
 		//int32 LandmarkId = 
@@ -21,10 +22,11 @@ void UMyAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		SetIKTarget(BoneName, IKTargetPosition);
 
 		UE_LOG(LogMyAnimInstance, Log, TEXT("Updated IK Target Position for Bone: %s"), *BoneName.ToString());
-	}
+	}#1#
 }
+*/
 
-FVector UMyAnimInstance::CalculateIKPosition(const AAI_Pawn* Pawn, int32 LandmarkId)
+/*FVector UMyAnimInstance::CalculateIKPosition(const AAI_Pawn* Pawn, int32 LandmarkId)
 {
 	if (!Pawn)
 		return FVector::ZeroVector;
@@ -42,4 +44,4 @@ void UMyAnimInstance::SetIKTarget(const FName& BoneName, const FVector& IKPositi
 
 		UE_LOG(LogMyAnimInstance, Log, TEXT("IK position for bone '%s' set to: %s."), *BoneName.ToString(), *IKPosition.ToString());
 	}
-}
+}*/
