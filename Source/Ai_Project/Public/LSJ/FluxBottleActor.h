@@ -3,11 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BeverageInterface.h"
 #include "GameFramework/Actor.h"
 #include "FluxBottleActor.generated.h"
 
 UCLASS()
-class AI_PROJECT_API AFluxBottleActor : public AActor
+class AI_PROJECT_API AFluxBottleActor : public AActor, public IBeverageInterface
 {
 	GENERATED_BODY()
 	

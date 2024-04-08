@@ -3,11 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BeverageFluxInterface.h"
 #include "GameFramework/Actor.h"
 #include "DispenserActor.generated.h"
 
 UCLASS()
-class AI_PROJECT_API ADispenserActor : public AActor
+class AI_PROJECT_API ADispenserActor : public AActor, public IBeverageFluxInterface
 {
 	GENERATED_BODY()
 	
@@ -19,6 +20,10 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	UStaticMeshComponent* FluxHandleComp;
+	UStaticMeshComponent* DispenserComp;
+
+	EBeverage BeerBeverage;
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

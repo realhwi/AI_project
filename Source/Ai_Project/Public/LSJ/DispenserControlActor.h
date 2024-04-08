@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "DispenserControlActor.generated.h"
 
+class ADispenserActor;
+
 UCLASS()
 class AI_PROJECT_API ADispenserControlActor : public AActor
 {
@@ -19,8 +21,13 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	UPROPERTY(EditAnywhere)
+	TArray<ADispenserActor*> ControlledDispenser;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	
 
 };
