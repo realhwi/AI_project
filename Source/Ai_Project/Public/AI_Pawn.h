@@ -55,8 +55,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
 	void UpdateHandMeshPosition(int32 Id, const FVector& NewPosition);
 	// 현재 핸드 ID와 본 이름에 해당하는 위치를 얻기 위한 함수 
-	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
-	FVector GetHandPosition(int32 HandId, FName BoneName);
+	/*UFUNCTION(BlueprintCallable, Category="Hand Tracking")
+	FVector GetHandPosition(int32 HandId, FName BoneName);*/
 
 	// 손 모델 접근 함수 
 	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
@@ -72,5 +72,8 @@ public:
 
 	FVector ReferencePosition; // 기준점 위치
 	bool bHasReference = false; // 기준점이 설정되었는지 여부
+public:
+	UPROPERTY()
+	class ASocketClient* SocketClient;
 	
 };

@@ -2,11 +2,16 @@
 
 
 #include "AI_Pawn.h"
+
+#include "ComponentReregisterContext.h"
+#include "EngineUtils.h"
 #include "Camera/CameraComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h" 
+#include "SocketClient.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/BlueprintTypeConversions.h"
 
 
 // Sets default values
@@ -46,6 +51,8 @@ AAI_Pawn::AAI_Pawn()
 		RightHandMesh->SetupAttachment(CameraComponent);
 		RightHandMesh->SetRelativeLocation(HandRelativeLocation);
 	}
+	//SocketClient = CreateDefaultSubobject<ASocketClient> (TEXT("SocketClient")); // ASocketClient 인스턴스를 얻는 코드
+	
 }
 
 // Called when the game starts or when spawned
@@ -80,6 +87,11 @@ void AAI_Pawn::BeginPlay()
 		UE_LOG(LogTemp, Log, TEXT("Left Hand Mesh Location: %s"), *LeftHandLocation.ToString());
 		UE_LOG(LogTemp, Log, TEXT("Right Hand Mesh Location: %s"), *RightHandLocation.ToString());
 	}
+
+	for (TActorIterator<ASocketClient> It(GetWorld(), ASocketClient::StaticClass()); It; ++It)
+	{
+		SocketClient = *It;
+	}
 }
 
 // Called every frame
@@ -93,8 +105,18 @@ void AAI_Pawn::Tick(float DeltaTime)
 		// 여기서는 예시로 핸드 메시의 손목 본 위치를 가져옵니다.
 		ReferencePosition = RightHandMesh->GetSocketLocation(TEXT("wrist_inner_r"));
 	}
-    FString ReceivedData = TEXT("{\"hands\":[{\"landmarks\":[{\"id\":0,\"x\":0.5,\"y\":0.5},{\"id\":1,\"x\":0.6,\"y\":0.6}]}]}");
-	ParseAndApplyHandTrackingData(ReceivedData);
+	if(SocketClient == nullptr)
+	{
+		UE_LOG(LogInput,Log,TEXT("SocketClient is null") )
+	}
+	if(SocketClient != nullptr)
+	{
+		FString ReceivedData ;
+		
+		SocketClient->ReceiveData(ReceivedData);
+		UE_LOG(LogInput,Log,TEXT("recData:%s"),*ReceivedData)
+		ParseAndApplyHandTrackingData(ReceivedData);
+	}
 }
 
 // Called to bind functionality to input
@@ -143,14 +165,15 @@ FName AAI_Pawn::GetBoneNameFromLandmarkId(int32 LandmarkId) const
 
 void AAI_Pawn::ParseAndApplyHandTrackingData(const FString& ReceivedData)
 {
-	// JSON 데이터를 변환하여 핸드 랜드마크 ID랑 좌표 추출해서 언리얼 엔진 월드 좌표로 변환 
+	// JSON 데이터를 변환하여 핸드 랜드마크 ID와 좌표 추출해서 언리얼 엔진 월드 좌표로 변환
 	UE_LOG(LogTemp, Log, TEXT("ParseAndApplyHandTrackingData called with data: %s"), *ReceivedData);
 
 	TSharedPtr<FJsonObject> JsonObject;
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ReceivedData);
-
-	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+	FJsonSerializer::Deserialize(Reader, JsonObject);
+	if (JsonObject.IsValid())
 	{
+		UE_LOG(LogInput, Log, TEXT("RawData: %s"), *ReceivedData);
 		const TArray<TSharedPtr<FJsonValue>>* HandsArray;
 		if (JsonObject->TryGetArrayField(TEXT("hands"), HandsArray))
 		{
@@ -163,72 +186,92 @@ void AAI_Pawn::ParseAndApplyHandTrackingData(const FString& ReceivedData)
 					int32 Id = LandmarkObj->GetIntegerField(TEXT("id"));
 					float X = LandmarkObj->GetNumberField(TEXT("x"));
 					float Y = LandmarkObj->GetNumberField(TEXT("y"));
-					float Z = 0.0f; // 예제에서는 Z 좌표를 0으로 설정
+					float Z = LandmarkObj->GetNumberField(TEXT("z")); // Assuming Z coordinate is now provided and used
 
 					// Mediapipe 좌표를 언리얼 좌표계로 변환
 					FVector UnrealPosition = ConvertPythonToUnreal(X, Y, Z);
 					FName BoneName = GetBoneNameFromLandmarkId(Id);
-					UE_LOG(LogTemp, Log, TEXT("Landmark ID: %d, Pixel Coordinates: (X=%f, Y=%f), Unreal Coordinates: %s"), Id, X, Y, *UnrealPosition.ToString());
+					UE_LOG(LogTemp, Log, TEXT("Landmark ID: %d, Pixel Coordinates: (X=%f, Y=%f, Z=%f), Unreal Coordinates: %s"), Id, X, Y, Z, *UnrealPosition.ToString());
 
-					if (Id == 0) // ID 0이 기준점이라고 가정
-					{
-						ReferencePosition = UnrealPosition; // 기준 위치를 설정
-						bHasReference = true; // 기준점 설정 플래그를 참으로 설정
-					}
-					else if (bHasReference) // 기준점을 기준으로 상대적 위치를 계산
-					{
-						UnrealPosition -= ReferencePosition;
-					}
+					// 기준점을 가정하는 로직이 필요하다면 여기에 추가합니다.
+					// 예를 들어, 손목이 기준점일 때, 기준점 로직을 적용합니다.
 
-					if (!BoneName.IsNone())
-					{
-						// 여기서 BoneName.ToString()을 로그로 출력할 수 있습니다.
-						UE_LOG(LogTemp, Log, TEXT("Updating Bone: %s"), *BoneName.ToString());
-						UpdateHandMeshPosition(Id, UnrealPosition);
-						LandmarkIdToPositionMap.Add(Id, UnrealPosition);
-					}
+					// 각 랜드마크에 대한 위치 업데이트를 수행합니다.
+					UpdateHandMeshPosition(Id, UnrealPosition);
 				}
 			}
 		}
 	}
 }
 
+FVector AAI_Pawn::ConvertPythonToUnreal(float PixelX, float PixelY, float PixelZ)
+{
+	// 스케일을 조정할 상수입니다. 클래스 멤버 변수가 아니라면 이름을 구체적으로 명시하는 것이 좋습니다.
+	const float ConversionScale = 0.05f; 
+	const float CenterX = 300.0f; 
+	const float CenterY = 250.0f;
+	const float ConversionScaleZ = -0.5;
+	
+	float UnrealX = (PixelX - CenterX) * ConversionScale;
+	float UnrealY = (PixelY - CenterY) * ConversionScale;
+	float UnrealZ = FMath::Pow( PixelZ  ,ConversionScaleZ); // z값 스케일을 찾기 위한 로그 찍기 
+
+	FVector ConvertedPosition = FVector(UnrealX, UnrealY, UnrealZ);
+	UE_LOG(LogActorComponent, Log, TEXT("ConvertPythonToUnreal called with PixelX: %f, PixelY: %f, PixelZ: %f"), PixelX, PixelY, PixelZ);
+	UE_LOG(LogActorComponent, Log, TEXT("Converted Unreal Position: %s"), *ConvertedPosition.ToString());
+	UE_LOG(LogActorComponent, Log, TEXT("ConversionScale used: %f"), ConversionScale);
+
+	return ConvertedPosition;
+}
+
 void AAI_Pawn::UpdateHandMeshPosition(int32 Id, const FVector& NewPosition)
 {
-	USkeletalMeshComponent* HandMesh = (Id == 0) ? LeftHandMesh : RightHandMesh;
-	if (HandMesh)
+	FName BoneName = GetBoneNameFromLandmarkId(Id);
+	UE_LOG(LogTemp, Log, TEXT("UpdateHandMeshPosition called with Id: %d, NewPosition: %s"), Id, *NewPosition.ToString());
+	
+	if (!BoneName.IsNone())
 	{
-		// 메시를 본의 상대적 위치로 이동시킵니다.
-		FVector LocalPosition = (Id == 0) ? NewPosition : NewPosition * -1.f; // 오른손과 왼손의 좌표 미러링
-		HandMesh->SetRelativeLocation(LocalPosition);
+		USkeletalMeshComponent* HandMesh = (Id == 0) ? LeftHandMesh : RightHandMesh;
+		if (HandMesh)
+		{
+			int32 BoneIndex = HandMesh->GetBoneIndex(BoneName);
+			if (BoneIndex != INDEX_NONE) // 본이 발견된 경우에만 진행
+			{
+				// 현재 본의 Transform을 얻습니다.
+				FTransform BoneTransform = HandMesh->GetBoneTransform(BoneIndex);
+
+				// 현재 본의 회전(Quaternion)을 얻습니다.
+				FQuat CurrentRotation = BoneTransform.GetRotation();
+
+				// 목표 방향을 계산합니다.
+				FVector TargetDirection = (NewPosition - BoneTransform.GetLocation()).GetSafeNormal();
+				FRotator TargetRotation = TargetDirection.Rotation();
+                
+				// 목표 회전(Quaternion)을 계산합니다.
+				FQuat TargetQuatRotation = FQuat(TargetRotation);
+
+				// Slerp를 사용하여 현재 회전에서 목표 회전으로 보간합니다.
+				float Alpha = 0.1f; // 보간 계수 (0.0에서 1.0 사이의 값)
+				FQuat NewQuatRotation = FQuat::Slerp(CurrentRotation, TargetQuatRotation, Alpha);
+
+				// 위치는 그대로 두고, 보간된 회전으로 설정합니다.
+				BoneTransform.SetRotation(NewQuatRotation);
+
+				// 본의 Transform을 업데이트합니다.
+				HandMesh->SetWorldTransform(BoneTransform, false, nullptr, ETeleportType::TeleportPhysics);
+			}
+		}
 	}
 }
 
-FVector AAI_Pawn::ConvertPythonToUnreal(float PixelX, float PixelY, float PixelZ)
-{
-    // 스케일을 조정할 상수입니다. 클래스 멤버 변수가 아니라면 이름을 구체적으로 명시하는 것이 좋습니다.
-    const float ConversionScale = 100.0f; 
-    const float CenterX = 0.5f; 
-    const float CenterY = 0.5f;
-	const float ConversionScaleZ = 1.0f; 
-
-	
-    float UnrealX = (PixelX - CenterX) * ConversionScale;
-    float UnrealY = (PixelY - CenterY) * ConversionScale;
-    float UnrealZ = PixelZ * ConversionScaleZ; // z값 스케일을 찾기 위한 로그 찍기 
-
-    return FVector(UnrealX, UnrealY, UnrealZ);
-}
-
-FVector AAI_Pawn::GetHandPosition(int32 HandId, FName BoneName)
+/*FVector AAI_Pawn::GetHandPosition(int32 HandId, FName BoneName)
 {
 	//TODO:
 	return FVector();
-}
+}*/
 
 FVector AAI_Pawn::GetPositionForLandmarkId(int32 LandmarkId) const
 {
 	const FVector* FoundPosition = LandmarkIdToPositionMap.Find(LandmarkId);
 	return FoundPosition ? *FoundPosition : FVector::ZeroVector;
 }
-

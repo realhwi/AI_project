@@ -11,7 +11,7 @@
 ASocketClient::ASocketClient()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 }
 
@@ -26,11 +26,13 @@ void ASocketClient::BeginPlay()
 void ASocketClient::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-    FString ReceivedMessage;
-    if(ReceiveData(ReceivedMessage))
-    {
-        UE_LOG(LogTemp, Log, TEXT("Received message: %s"), *ReceivedMessage);
-    }
+        /*
+        auto data = ReceiveData(ReceivedMessage);
+        if(data)
+        {
+            UE_LOG(LogTemp, Log, TEXT("Received message: %s"), *ReceivedMessage);
+        }
+        */
 }
 
 void ASocketClient::ConnectToServer()
@@ -113,7 +115,7 @@ bool ASocketClient::ReceiveData(FString& OutMessage)
     }
 
     // 버퍼 사이즈를 정의합니다.
-    const int32 BufferSize = 16384;
+    const int32 BufferSize = 4096;
     uint8 ReceiveBuffer[BufferSize];
     int32 BytesRead = 0;
     
@@ -128,7 +130,7 @@ bool ASocketClient::ReceiveData(FString& OutMessage)
             // UTF8_TO_TCHAR로 변환할 때 실제로 읽은 바이트만큼만 처리합니다.
             FString ReceivedString = FString(UTF8_TO_TCHAR(reinterpret_cast<char*>(ReceiveBuffer))).Left(BytesRead);
             OutMessage = ReceivedString;
-            UE_LOG(LogTemp, Log, TEXT("%s"), *OutMessage); // 로그 레벨을 Error에서 Log로 변경
+            UE_LOG(LogTemp, Log, TEXT("Received Data: %s"), *OutMessage); // 로그 위치 변경
             return true;
         }
     }
