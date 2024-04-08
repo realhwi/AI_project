@@ -1,19 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="c747c5fe-8c3d-420e-a667-16b0a6a9d332" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/Ai_Project.uproject" beforeDir="false" afterPath="$PROJECT_DIR$/Ai_Project.uproject" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Config/DefaultEngine.ini" beforeDir="false" afterPath="$PROJECT_DIR$/Config/DefaultEngine.ini" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/Maps/SubLevels/DynamicMeshs.umap" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Maps/SubLevels/DynamicMeshs.umap" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/Maps/SubLevels/StaticMeshs.umap" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Maps/SubLevels/StaticMeshs.umap" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.Ai_Project.dir/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Ai_Project.dir/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Content/Maps/TestMaps.umap" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Maps/TestMaps.umap" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/Models/Bar_Ground/bar_glasses_ao.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Models/Bar_Ground/bar_glasses_ao.uasset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/Models/Bar_Ground/bar_glasses_color.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Models/Bar_Ground/bar_glasses_color.uasset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/Models/Bar_Ground/bar_glasses_metal.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Models/Bar_Ground/bar_glasses_metal.uasset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/Models/Bar_Ground/bar_glasses_normal.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Models/Bar_Ground/bar_glasses_normal.uasset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/Models/Bar_Ground/bar_glasses_opacity.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Models/Bar_Ground/bar_glasses_opacity.uasset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/Models/Bar_Ground/bar_glasses_rough.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Models/Bar_Ground/bar_glasses_rough.uasset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/Ai_Project/Ai_Project.Build.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Ai_Project/Ai_Project.Build.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,9 +16,12 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 8
-}]]></component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/Source/Ai_Project/Private/LSJ/FluxBottleActor.cpp" root0="FORCE_HIGHLIGHTING" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8
+}</component>
   <component name="ProjectId" id="2eei2YSNU2sKix7JQihvCeBWsyS" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -35,15 +31,19 @@
   "keyToString": {
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "0403__KJH",
+    "git-widget-placeholder": "0403__lsj",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "vue.rearranger.settings.migration": "true"
   },
   "keyToStringList": {
     "rider.external.source.directories": [
-      "C:\\Users\\ASUS\\AppData\\Roaming\\JetBrains\\Rider2023.3\\resharper-host\\DecompilerCache",
-      "C:\\Users\\ASUS\\AppData\\Roaming\\JetBrains\\Rider2023.3\\resharper-host\\SourcesCache",
-      "C:\\Users\\ASUS\\AppData\\Local\\Symbols\\src"
+      "C:\\Users\\MSI\\AppData\\Roaming\\JetBrains\\Rider2023.3\\resharper-host\\DecompilerCache",
+      "C:\\Users\\MSI\\AppData\\Roaming\\JetBrains\\Rider2023.3\\resharper-host\\SourcesCache",
+      "C:\\Users\\MSI\\AppData\\Local\\Symbols\\src"
     ]
   }
 }]]></component>
@@ -56,6 +56,7 @@
       <option name="presentableId" value="Default" />
       <updated>1712271237785</updated>
       <workItem from="1712271238952" duration="13000" />
+      <workItem from="1712538036590" duration="3152000" />
     </task>
     <servers />
   </component>
