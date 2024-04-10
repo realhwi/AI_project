@@ -3,21 +3,30 @@
 
 #include "LSJ/BeverageFluxInterface.h"
 
+#include "LSJ/CDOBeverage.h"
+
 
 // Add default functionality here for any IBeverageFluxInterface functions that are not pure virtual.
-void IBeverageFluxInterface::SetBeverage(EBeverage Beverage)
+
+
+void IBeverageFluxInterface::SetEBeverage(FBeverage& SelfBeverage,EBeverage BeverageCharacter)
 {
-	if(Beverage - EBeverage::BeerMax) //Beers
+	if(BeverageCharacter - EBeverage::BeerMax) //Beers
 	{
-		Viscosity = Beverage / (EBeverage::BeerMax - 1) * 0.2 + 0.8;
-		Contrast = Beverage / (EBeverage::BeerMax - 1);
-		Form = Beverage / (EBeverage::BeerMax - 1) * 0.2 + 0.8;
+		SelfBeverage.Viscosity = BeverageCharacter / (EBeverage::BeerMax - 1) * 0.2 + 0.8;
+		SelfBeverage.Contrast = BeverageCharacter / (EBeverage::BeerMax - 1);
+		SelfBeverage.Form = BeverageCharacter / (EBeverage::BeerMax - 1) * 0.2 + 0.8;
 	}
 	else //Liquors
 	{
-		Viscosity = Beverage / (EBeverage::BeerMax - 1) * 0.2 + 0.8;
-		Contrast = Beverage / (EBeverage::BeerMax - 1);
-		Form = Beverage / (EBeverage::BeerMax - 1) * 0.2 + 0.8;
+		SelfBeverage.Viscosity = BeverageCharacter / (EBeverage::BeerMax - 1) * 0.2 + 0.8;
+		SelfBeverage.Contrast = BeverageCharacter / (EBeverage::BeerMax - 1);
+		SelfBeverage.Form = BeverageCharacter / (EBeverage::BeerMax - 1) * 0.2 + 0.8;
 	}
+}
+	
+
+void IBeverageFluxInterface::DropBeverage(FBeverage BeverageStruct, ACDOBeverage* ArrayCDOBeverage)
+{
 	
 }

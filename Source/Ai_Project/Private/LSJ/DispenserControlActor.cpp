@@ -31,9 +31,10 @@ void ADispenserControlActor::Tick(float DeltaTime)
 
 void ADispenserControlActor::SetControlledDispenserLocation()
 {
-	for (auto Dispenser:ControlledDispenser)
+	const int32 _NumControlledDispenser = ControlledDispenser.Num();
+	for (int i=0; i<_NumControlledDispenser;i++)
 	{
-		Dispenser->SetActorLocation(this.);
+		ControlledDispenser[i]->SetActorLocation(this->GetActorLocation() + DispenserIterOffsetX * i + DispenserOffsetX);
 	}
 }
 

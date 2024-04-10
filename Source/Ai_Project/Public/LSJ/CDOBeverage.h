@@ -3,30 +3,37 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BeverageFluxInterface.h"
 #include "GameFramework/Actor.h"
-#include "FluxBottleActor.generated.h"
+#include "CDOBeverage.generated.h"
+
 
 UCLASS()
-class AI_PROJECT_API AFluxBottleActor : public AActor, public IBeverageFluxInterface
+class AI_PROJECT_API ACDOBeverage : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
-	AFluxBottleActor();
+	ACDOBeverage();
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-	UPROPERTY()
-	FBeverage Beverage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 CDOSize = 100;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 CurrentPoolingBeverage = 0;
 	
-	UPROPERTY()
-	ACDOBeverage* CDOBeverage;
+	UPROPERTY(EditDefaultsOnly)
+	TArray<class ABeverageUnit*> CDOBeverage;
+
+	UFUNCTION()
+	void NextPoolingBeverage();
 	
 };

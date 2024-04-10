@@ -31,4 +31,6 @@ public:
 
 	void SetControlledDispenserLocation();
 
+	float DispenserIterOffsetX = 20;
+	float DispenserOffsetX = 0;
 };

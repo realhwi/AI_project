@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CDOBeverage.h"
 #include "UObject/Interface.h"
 #include "BeverageFluxInterface.generated.h"
 
@@ -12,9 +13,21 @@ enum EBeverage : UINT8
 {
 	Lager,
 	Ale,
-	Lambic,
+	Dark,
 	BeerMax
 };
+
+USTRUCT()
+struct FBeverage
+{
+	GENERATED_BODY()
+	float Viscosity = 0; // dropSpeed
+	float Contrast = 0; // colour
+	float Form = 0; // whip
+};
+
+
+
 
 // This class does not need to be modified.
 UINTERFACE()
@@ -29,15 +42,14 @@ class UBeverageFluxInterface : public UInterface
 class AI_PROJECT_API IBeverageFluxInterface
 {
 	GENERATED_BODY()
-
-	virtual void SetBeverage(EBeverage Beverage);
-
-	
 	
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
+	
 
-	float Viscosity = 0; // dropSpeed
-	float Contrast = 0; // colour
-	float Form = 0; // whip
+	UFUNCTION()
+	virtual void SetEBeverage(FBeverage& SelfBeverage,EBeverage BeverageCharacter);
+	
+	UFUNCTION()
+	virtual void DropBeverage(FBeverage BeverageStruct, ACDOBeverage* ArrayCDOBeverage);
 };

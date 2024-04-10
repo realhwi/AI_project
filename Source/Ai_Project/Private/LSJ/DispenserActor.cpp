@@ -9,6 +9,10 @@ ADispenserActor::ADispenserActor()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
+	FluxHandleComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FluxHandle"));
+	DispenserComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Dispenser"));
+
+	
 }
 
 // Called when the game starts or when spawned
@@ -16,8 +20,6 @@ void ADispenserActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	FluxHandleComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FluxHandle"));
-	DispenserComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Dispenser"));
 }
 
 // Called every frame
