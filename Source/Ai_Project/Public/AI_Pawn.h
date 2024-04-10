@@ -47,16 +47,13 @@ public:
 
 	// 핸드 트래킹 LandmarkId로 본 이름 업데이트 
 	UFUNCTION(BlueprintCallable, Category = "Hand Tracking")
-	FName GetBoneNameFromLandmarkId(int32 LandmarkId) const;
+	FName GetBoneNameFromLandmarkId(int32 LandmarkId, const FString& HandType) const;
 	void ParseAndApplyHandTrackingData(const FString& ReceivedData);
 	// 파이썬으로 전달받은 트래킹 데이터를 언리얼 좌표로 변환 
 	FVector ConvertPythonToUnreal(float PixelX, float PixelY, float PixelZ);	
 	// 핸드 메시의 위치 업데이트
 	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
-	void UpdateHandMeshPosition(int32 Id, const FVector& NewPosition);
-	// 현재 핸드 ID와 본 이름에 해당하는 위치를 얻기 위한 함수 
-	/*UFUNCTION(BlueprintCallable, Category="Hand Tracking")
-	FVector GetHandPosition(int32 HandId, FName BoneName);*/
+	void UpdateHandMeshPosition(int32 Id, const FVector& NewPosition, const FString& HandType);
 
 	// 손 모델 접근 함수 
 	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
@@ -72,8 +69,13 @@ public:
 
 	FVector ReferencePosition; // 기준점 위치
 	bool bHasReference = false; // 기준점이 설정되었는지 여부
+	
 public:
 	UPROPERTY()
-	class ASocketClient* SocketClient;
-	
+	class ASocketClient* SocketClient;	
+
+	FVector InitialHandLocation; // 손의 초기 위치
+	FRotator InitialHandRotation; // 손의 초기 회전
+	bool bInitialHandPositionSet = false; // 초기 손 위치가 설정되었는지 나타내는 플래그
+
 };
