@@ -13,6 +13,7 @@ enum EBeverage : UINT8
 	Lager,
 	Ale,
 	Lambic,
+	BeerMax
 };
 
 // This class does not need to be modified.
@@ -29,7 +30,14 @@ class AI_PROJECT_API IBeverageFluxInterface
 {
 	GENERATED_BODY()
 
+	virtual void SetBeverage(EBeverage Beverage);
+
+	
 	
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
+
+	float Viscosity = 0; // dropSpeed
+	float Contrast = 0; // colour
+	float Form = 0; // whip
 };

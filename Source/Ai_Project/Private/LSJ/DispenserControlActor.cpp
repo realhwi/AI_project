@@ -3,6 +3,8 @@
 
 #include "LSJ/DispenserControlActor.h"
 
+#include "LSJ/DispenserActor.h"
+
 // Sets default values
 ADispenserControlActor::ADispenserControlActor()
 {
@@ -25,5 +27,13 @@ void ADispenserControlActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void ADispenserControlActor::SetControlledDispenserLocation()
+{
+	for (auto Dispenser:ControlledDispenser)
+	{
+		Dispenser->SetActorLocation(this.);
+	}
 }
 

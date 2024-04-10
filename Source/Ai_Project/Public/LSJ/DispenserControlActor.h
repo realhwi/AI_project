@@ -24,10 +24,11 @@ protected:
 	UPROPERTY(EditAnywhere)
 	TArray<ADispenserActor*> ControlledDispenser;
 
+	
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	
+	void SetControlledDispenserLocation();
 
 };

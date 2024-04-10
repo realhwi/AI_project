@@ -17,6 +17,7 @@ void ADispenserActor::BeginPlay()
 	Super::BeginPlay();
 
 	FluxHandleComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FluxHandle"));
+	DispenserComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Dispenser"));
 }
 
 // Called every frame
