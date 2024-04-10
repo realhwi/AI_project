@@ -26,13 +26,6 @@ void ASocketClient::BeginPlay()
 void ASocketClient::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-        /*
-        auto data = ReceiveData(ReceivedMessage);
-        if(data)
-        {
-            UE_LOG(LogTemp, Log, TEXT("Received message: %s"), *ReceivedMessage);
-        }
-        */
 }
 
 void ASocketClient::ConnectToServer()

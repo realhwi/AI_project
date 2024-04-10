@@ -73,9 +73,13 @@ public:
 public:
 	UPROPERTY()
 	class ASocketClient* SocketClient;	
+	FVector InitialCameraLocation;
+	FVector HandMeshOffsetFromCamera; // 카메라로부터 핸드 메시까지의 상대적 거리
 
-	FVector InitialHandLocation; // 손의 초기 위치
-	FRotator InitialHandRotation; // 손의 초기 회전
+	FVector InitialRightHandLocation; // 손의 초기 위치
+	FRotator InitialRightHandRotation; // 손의 초기 회전
+	FVector InitialLeftHandLocation; // 손의 초기 위치
+	FRotator InitialLeftHandRotation; // 손의 초기 회전
 	bool bInitialHandPositionSet = false; // 초기 손 위치가 설정되었는지 나타내는 플래그
 
 };
