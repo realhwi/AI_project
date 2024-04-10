@@ -11,7 +11,6 @@
 #include "EnhancedInputComponent.h" 
 #include "SocketClient.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Kismet/BlueprintTypeConversions.h"
 
 
 // Sets default values
@@ -223,20 +222,29 @@ void AAI_Pawn::ParseAndApplyHandTrackingData(const FString& ReceivedData)
 
 FVector AAI_Pawn::ConvertPythonToUnreal(float PixelX, float PixelY, float PixelZ)
 {
-	// 스케일을 조정할 상수입니다. 클래스 멤버 변수가 아니라면 이름을 구체적으로 명시하는 것이 좋습니다.
-	const float ConversionScale = 0.05f; 
-	const float CenterX =320.0f; 
-	const float CenterY = 240.0f;
-	const float ConversionScaleZ = 0;
-	
-	float UnrealX = 0;
-	float UnrealY = (PixelX - CenterX) * ConversionScale;
-	float UnrealZ = (PixelY - CenterY) * ConversionScale;
+	// 웹캠 해상도의 최대값을 정의합니다.
+	const float MaxWebcamX = 600.0f;
+	const float MaxWebcamY = 580.0f;
+
+	// 웹캠 해상도의 중앙값을 정의합니다.
+	const float CenterX = MaxWebcamX / 2.0f;
+	const float CenterY = MaxWebcamY / 2.0f;
+
+	// 웹캠에서의 픽셀 단위를 언리얼 엔진의 월드 스케일로 변환할 스케일 인자를 정의합니다.
+	const float ConversionScaleXY = 0.05f; // x와 y축 변환에 사용될 스케일 인자
+	const float ConversionScaleZ = 0.05f; // z축 변환에 사용될 스케일 인자
+
+	// 웹캠의 픽셀 좌표를 언리얼의 월드 좌표계로 변환합니다.
+	// 여기서, 웹캠의 x축은 언리얼의 y축으로, 웹캠의 y축은 언리얼의 z축으로 매핑되며,
+	// 웹캠의 z축은 언리얼의 x축으로 매핑됩니다.
+	float UnrealY = (PixelX - CenterX) * ConversionScaleXY; // 웹캠 왼쪽이 마이너스, 오른쪽이 플러스 방향
+	float UnrealZ = (CenterY - PixelY) * ConversionScaleXY; // 웹캠 상단이 마이너스, 하단이 플러스 방향
+	float UnrealX = PixelZ * ConversionScaleZ; // 웹캠에 가까울수록 언리얼에서 멀어지는 방향(양의 X 방향)
 
 	FVector ConvertedPosition = FVector(UnrealX, UnrealY, UnrealZ);
 	UE_LOG(LogActorComponent, Log, TEXT("ConvertPythonToUnreal called with PixelX: %f, PixelY: %f, PixelZ: %f"), PixelX, PixelY, PixelZ);
 	UE_LOG(LogActorComponent, Log, TEXT("Converted Unreal Position: %s"), *ConvertedPosition.ToString());
-	UE_LOG(LogActorComponent, Log, TEXT("ConversionScale used: %f"), ConversionScale);
+	UE_LOG(LogActorComponent, Log, TEXT("ConversionScale used: XY: %f, Z: %f"), ConversionScaleXY, ConversionScaleZ);
 
 	return ConvertedPosition;
 }
@@ -254,21 +262,41 @@ void AAI_Pawn::UpdateHandMeshPosition(int32 Id, const FVector& NewPosition, cons
 	// 이때, HandMeshOffsetFromCamera를 사용하여 카메라 위치에 상대적인 위치를 고려합니다.
 	FVector NewHandPositionRelativeToCamera = NewPosition + HandMeshOffsetFromCamera;
 	FVector NewWorldPosition = CameraComponent->GetComponentLocation() + NewHandPositionRelativeToCamera;
-	
-	// 회전을 조정합니다. 여기서는 카메라의 회전을 기반으로 손이 항상 카메라를 향하도록 조정합니다.
+
+	// 카메라의 회전을 가져와서 손의 회전을 조정합니다.
 	FRotator CameraRotator = CameraComponent->GetComponentRotation();
-	FRotator AdjustedRotation = FRotator(CameraRotator.Pitch, CameraRotator.Yaw + 180.0f, CameraRotator.Roll);
-	FQuat AdjustedQuatRotation = FQuat(AdjustedRotation);
+	FRotator HandRotation = FRotator(-CameraRotator.Pitch, CameraRotator.Yaw, -CameraRotator.Roll);
+	FQuat TargetQuat = FQuat(HandRotation);
 
-	// 핸드 메시의 새로운 위치와 조정된 회전으로 업데이트합니다.
-	HandMesh->SetWorldLocationAndRotation(NewWorldPosition, AdjustedQuatRotation, false, nullptr, ETeleportType::TeleportPhysics);
+	// 현재 핸드 메시의 회전에서 목표 회전으로 보간
+	FQuat CurrentQuat = HandMesh->GetComponentQuat();
+	FQuat NewQuat = FQuat::Slerp(CurrentQuat, TargetQuat, RotationSpeed);
 	
-	UE_LOG(LogTemp, Log, TEXT("Updated %s Hand Mesh Position to %s and Adjusted Rotation"), *HandType, *NewWorldPosition.ToString());
+	// 핸드 메시의 새로운 위치와 조정된 회전으로 업데이트합니다.
+	HandMesh->SetWorldLocationAndRotation(NewWorldPosition, NewQuat);
+
+    UE_LOG(LogTemp, Log, TEXT("Updated %s Hand Mesh Position to %s and Adjusted Rotation"), *HandType, *NewWorldPosition.ToString());
 }
 
-FVector AAI_Pawn::GetPositionForLandmarkId(int32 LandmarkId) const
+void AAI_Pawn::UpdateBonePosition(int32 BoneId, const FVector& NewPosition, const FString& HandType)
 {
-	const FVector* FoundPosition = LandmarkIdToPositionMap.Find(LandmarkId);
-	return FoundPosition ? *FoundPosition : FVector::ZeroVector;
-}
+	if (!CameraComponent || !LeftHandMesh || !RightHandMesh) return;
 
+	// 해당 핸드 타입에 맞는 메시 컴포넌트를 선택합니다.
+	USkeletalMeshComponent* HandMesh = HandType.Equals("Left", ESearchCase::IgnoreCase) ? LeftHandMesh : RightHandMesh;
+
+	// 본 이름을 ID로부터 가져옵니다.
+	FName BoneName = GetBoneNameFromLandmarkId(BoneId, HandType);
+	if (BoneName.IsNone() || !HandMesh) return;
+
+	// 본의 현재 월드 위치를 가져옵니다.
+	FVector BoneWorldPosition = HandMesh->GetBoneLocation(BoneName, EBoneSpaces::WorldSpace);
+
+	// 웹캠 데이터에 기반하여 본의 새로운 월드 위치를 계산합니다.
+	FVector AdjustedNewPosition = InitialCameraLocation + (NewPosition - ReferencePosition);
+
+	// 핸드 메시 컴포넌트에서 본의 위치를 업데이트합니다.
+	HandMesh->SetBoneLocationByName(BoneName, AdjustedNewPosition, EBoneSpaces::WorldSpace);
+
+	UE_LOG(LogTemp, Log, TEXT("Updated %s Bone Position to %s"), *BoneName.ToString(), *AdjustedNewPosition.ToString());
+}

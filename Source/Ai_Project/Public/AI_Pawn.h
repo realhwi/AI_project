@@ -45,41 +45,37 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Settings | Player")
 	class USkeletalMeshComponent* RightHandMesh;
 
-	// 핸드 트래킹 LandmarkId로 본 이름 업데이트 
+    // 본 ID에 따라 본 이름 가져오기
 	UFUNCTION(BlueprintCallable, Category = "Hand Tracking")
 	FName GetBoneNameFromLandmarkId(int32 LandmarkId, const FString& HandType) const;
+	// 웹캠 데이터 파싱 및 핸드 트래킹 데이터 적용
 	void ParseAndApplyHandTrackingData(const FString& ReceivedData);
-	// 파이썬으로 전달받은 트래킹 데이터를 언리얼 좌표로 변환 
+    // 웹캠 데이터로부터 언리얼 엔진 좌표계로 변환
 	FVector ConvertPythonToUnreal(float PixelX, float PixelY, float PixelZ);	
-	// 핸드 메시의 위치 업데이트
+    // 웹캠 데이터를 기반으로 핸드 메시 위치 업데이트
 	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
 	void UpdateHandMeshPosition(int32 Id, const FVector& NewPosition, const FString& HandType);
-
-	// 손 모델 접근 함수 
 	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
-	USkeletalMeshComponent* GetLeftHandMesh() const { return LeftHandMesh; }
-
-	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
-	USkeletalMeshComponent* GetRightHandMesh() const { return RightHandMesh; }
+	void UpdateBonePosition(int32 BoneId, const FVector& NewPosition, const FString& HandType);
 	
 	// 랜드마크 좌표 저장 맴버 변수 
 	TMap<int32, FVector> LandmarkIdToPositionMap;
-
-	FVector GetPositionForLandmarkId(int32 LandmarkId) const;
-
+	
 	FVector ReferencePosition; // 기준점 위치
 	bool bHasReference = false; // 기준점이 설정되었는지 여부
 	
-public:
 	UPROPERTY()
 	class ASocketClient* SocketClient;	
-	FVector InitialCameraLocation;
+	FVector InitialCameraLocation;     // 초기 카메라 위치
 	FVector HandMeshOffsetFromCamera; // 카메라로부터 핸드 메시까지의 상대적 거리
 
-	FVector InitialRightHandLocation; // 손의 초기 위치
-	FRotator InitialRightHandRotation; // 손의 초기 회전
-	FVector InitialLeftHandLocation; // 손의 초기 위치
-	FRotator InitialLeftHandRotation; // 손의 초기 회전
+	FVector InitialRightHandLocation; // 오른손 초기 위치
+	FRotator InitialRightHandRotation; // 오른손의 초기 회전
+	FVector InitialLeftHandLocation; // 왼손의 초기 위치
+	FRotator InitialLeftHandRotation; // 왼손의 초기 회전
 	bool bInitialHandPositionSet = false; // 초기 손 위치가 설정되었는지 나타내는 플래그
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HandTracking")
+	float RotationSpeed = 0.1f; // 적절한 기본값 설정
 
 };
