@@ -9,6 +9,10 @@
   <component name="ChangeListManager">
     <list default="true" id="c747c5fe-8c3d-420e-a667-16b0a6a9d332" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Ai_Project.dir/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Ai_Project.dir/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/Maps/PlayerMap.umap" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Maps/PlayerMap.umap" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/Maps/SubLevels/DynamicMeshs.umap" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Maps/SubLevels/DynamicMeshs.umap" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/Maps/SubLevels/StaticMeshs.umap" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Maps/SubLevels/StaticMeshs.umap" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/Maps/TestMaps.umap" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Maps/TestMaps.umap" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
