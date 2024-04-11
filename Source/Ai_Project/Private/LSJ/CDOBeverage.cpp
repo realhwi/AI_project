@@ -36,4 +36,8 @@ void ACDOBeverage::Tick(float DeltaTime)
 void ACDOBeverage::NextPoolingBeverage()
 {
 	CurrentPoolingBeverage++;
+	if (CurrentPoolingBeverage > CDOSize)
+	{
+		CurrentPoolingBeverage = 0;
+	}
 }
