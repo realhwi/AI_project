@@ -11,7 +11,7 @@
 ASocketClient::ASocketClient()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 }
 
@@ -26,11 +26,6 @@ void ASocketClient::BeginPlay()
 void ASocketClient::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-    FString ReceivedMessage;
-    if(ReceiveData(ReceivedMessage))
-    {
-        //UE_LOG(LogTemp, Log, TEXT("Received message: %s"), *ReceivedMessage);
-    }
 }
 
 void ASocketClient::ConnectToServer()
@@ -113,28 +108,27 @@ bool ASocketClient::ReceiveData(FString& OutMessage)
     }
 
     // 버퍼 사이즈를 정의합니다.
-    const int32 BufferSize = 1024;
+    const int32 BufferSize = 4096;
     uint8 ReceiveBuffer[BufferSize];
     int32 BytesRead = 0;
     
-    // 데이터를 수신하고 성공 여부를 반환합니다.
+    // 데이터를 수신하고 성공 여부를 확인합니다.
     bool bHasData = Socket->HasPendingData((uint32&)BytesRead);
-    Socket->HasPendingData((uint32&)BytesRead); // 여기서는 uint32로 캐스팅하지 않습니다
-    if (BytesRead)
+    if (bHasData && BytesRead > 0) // 데이터가 있고, 읽을 바이트가 있으면
     {
         bool bReceived = Socket->Recv(ReceiveBuffer, BufferSize, BytesRead, ESocketReceiveFlags::None);
-        if (Socket->Recv(ReceiveBuffer, BufferSize, BytesRead)) // 수정: Reader를 사용하지 않고 직접 ReceiveBuffer에 데이터를 받습니다.
+        if (bReceived && BytesRead > 0)
         {
             // 수신한 데이터를 FString으로 변환합니다.
-            // null-terminator를 추가해야 합니다.
-            FString ReceivedString = FString(UTF8_TO_TCHAR(ReceiveBuffer));
+            // UTF8_TO_TCHAR로 변환할 때 실제로 읽은 바이트만큼만 처리합니다.
+            FString ReceivedString = FString(UTF8_TO_TCHAR(reinterpret_cast<char*>(ReceiveBuffer))).Left(BytesRead);
             OutMessage = ReceivedString;
-            //UE_LOG(LogTemp, Error, TEXT("%s"), *OutMessage)
+            UE_LOG(LogTemp, Log, TEXT("Received Data: %s"), *OutMessage); // 로그 위치 변경
             return true;
         }
     }
 
-    return false; // 데이터가 없으므로 false 반환
+    return false; // 데이터 수신에 실패하면 false 반환
 }
 
 

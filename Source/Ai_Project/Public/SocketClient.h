@@ -15,7 +15,6 @@ class AI_PROJECT_API ASocketClient : public AActor
 public:	
 	// Sets default values for this actor's properties
 	ASocketClient();
-
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -37,4 +36,5 @@ public:
 	
 	bool bIsConnected;
 
+	FString ReceivedMessage;
 };
