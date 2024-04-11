@@ -54,9 +54,9 @@ public:
 	FVector ConvertPythonToUnreal(float PixelX, float PixelY, float PixelZ);	
     // 웹캠 데이터를 기반으로 핸드 메시 위치 업데이트
 	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
-	void UpdateHandMeshPosition(int32 Id, const FVector& NewPosition, const FString& HandType);
+	void UpdateHandMeshPosition(const FString& HandType, const FVector& NewPosition, const FRotator& NewRotation);
 	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
-	void UpdateBonePosition(int32 BoneId, const FVector& NewPosition, const FString& HandType);
+	void UpdateBonePositions(const TMap<int32, FVector>& BoneIdToPositionMap, const FString& HandType);
 	
 	// 랜드마크 좌표 저장 맴버 변수 
 	TMap<int32, FVector> LandmarkIdToPositionMap;
