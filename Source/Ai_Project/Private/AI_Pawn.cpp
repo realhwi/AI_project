@@ -112,19 +112,54 @@ void AAI_Pawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(IA_Look, ETriggerEvent::Triggered, this, &AAI_Pawn::RotateCamera);
+		EnhancedInputComponent->BindAction(IA_Look_Right, ETriggerEvent::Started, this, &AAI_Pawn::R_RotateCamera);
+		EnhancedInputComponent->BindAction(IA_Look_Left, ETriggerEvent::Started, this, &AAI_Pawn::L_RotateCamera);
+		EnhancedInputComponent->BindAction(IA_Move, ETriggerEvent::Triggered, this, &AAI_Pawn::Move);
 	}
 }
 
-void AAI_Pawn::RotateCamera(const FInputActionValue& Value)
+void AAI_Pawn::R_RotateCamera(const FInputActionValue& Value)
 {
 	if (Controller)
 	{
-		FRotator NewRotation = Controller->GetControlRotation() + FRotator(0.f, Value.GetMagnitude(), 0.f);
+		FRotator CurrentRotation = Controller->GetControlRotation();
+		FRotator NewRotation = FRotator(CurrentRotation.Pitch, CurrentRotation.Yaw + 90.0f, CurrentRotation.Roll);
 		Controller->SetControlRotation(NewRotation);
 	}
 }
-	
+
+void AAI_Pawn::L_RotateCamera(const FInputActionValue& Value)
+{
+	if (Controller)
+	{
+		FRotator CurrentRotation = Controller->GetControlRotation();
+		FRotator NewRotation = FRotator(CurrentRotation.Pitch, CurrentRotation.Yaw -90.0f, CurrentRotation.Roll);
+		Controller->SetControlRotation(NewRotation);
+	}
+}
+
+void AAI_Pawn::Move(const FInputActionValue& Value)
+{
+	FVector2D MovementVector = Value.Get<FVector2D>();
+
+	if (Controller != nullptr)
+	{
+		// find out which way is forward
+		const FRotator Rotation = Controller->GetControlRotation();
+		const FRotator YawRotation( 0 , Rotation.Yaw , 0 );
+
+		// get forward vector
+		const FVector ForwardDirection = FRotationMatrix( YawRotation ).GetUnitAxis( EAxis::X );
+
+		// get right vector 
+		const FVector RightDirection = FRotationMatrix( YawRotation ).GetUnitAxis( EAxis::Y );
+
+		// add movement 
+		AddMovementInput( ForwardDirection , MovementVector.Y );
+		AddMovementInput( RightDirection , MovementVector.X );
+	}
+}
+
 FName AAI_Pawn::GetBoneNameFromLandmarkId(int32 LandmarkId, const FString& HandType) const
 {
 	 // 오른손에 대한 본 이름 매핑
@@ -186,7 +221,6 @@ void AAI_Pawn::ParseAndApplyHandTrackingData(const FString& ReceivedData)
 
 	TSharedPtr<FJsonObject> JsonObject;
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ReceivedData);
-	TMap<int32, FVector> BoneIdToPositionMap;
 
 	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
 	{
@@ -200,7 +234,8 @@ void AAI_Pawn::ParseAndApplyHandTrackingData(const FString& ReceivedData)
 
 				FVector TotalPosition = FVector::ZeroVector;
 				int32 Count = 0;
-
+				this->LocalBoneIdToPositionMap.Empty();
+				
 				for (const auto& Landmark : Landmarks)
 				{
 					auto LandmarkObj = Landmark->AsObject();
@@ -210,15 +245,13 @@ void AAI_Pawn::ParseAndApplyHandTrackingData(const FString& ReceivedData)
 					float Z = LandmarkObj->GetNumberField(TEXT("z"));
 
 					FVector UnrealPosition = ConvertPythonToUnreal(X, Y, Z);
-					UE_LOG(LogTemp, Log, TEXT("Converted Unreal Position for %s Hand ID %d: %s"), *HandType, Id, *UnrealPosition.ToString());
-
+					
 					// 초기 손 위치에 대한 웹캠 데이터의 상대 위치 적용
 					FVector InitialHandLocation = (HandType.Equals("Left", ESearchCase::IgnoreCase)) ? InitialLeftHandLocation : InitialRightHandLocation;
 					FVector NewHandPosition = InitialHandLocation + (UnrealPosition - InitialHandLocation);
 					UE_LOG(LogTemp, Log, TEXT("New Hand Position for %s Hand ID %d: %s"), *HandType, Id, *NewHandPosition.ToString());
 
-					UpdateBonePositions(BoneIdToPositionMap, "Left");  
-					UpdateBonePositions(BoneIdToPositionMap, "Right");  
+					this->LocalBoneIdToPositionMap.Add(Id, NewHandPosition);
 					
 					// 위치와 카운트를 업데이트
 					TotalPosition += UnrealPosition;
@@ -229,6 +262,7 @@ void AAI_Pawn::ParseAndApplyHandTrackingData(const FString& ReceivedData)
 					FVector AveragePosition = TotalPosition / static_cast<float>(Count);
 					FRotator AverageRotation; // 평균 회전 계산 로직 필요
 					UpdateHandMeshPosition(HandType, AveragePosition, AverageRotation);
+					// UpdateBonePositions(this->LocalBoneIdToPositionMap, HandType);
 				}
 			}
 		}
@@ -247,7 +281,7 @@ FVector AAI_Pawn::ConvertPythonToUnreal(float PixelX, float PixelY, float PixelZ
 
 	// 웹캠에서의 픽셀 단위를 언리얼 엔진의 월드 스케일로 변환할 스케일 인자를 정의
 	const float ConversionScaleXY = 0.05f; // x와 y축 변환에 사용될 스케일 인자
-	const float ConversionScaleZ = 0.05f; // z축 변환에 사용될 스케일 인자
+	const float ConversionScaleZ = 100.f; // z축 변환에 사용될 스케일 인자
 
 	// 웹캠의 픽셀 좌표를 언리얼의 월드 좌표계로 변환
 	// 여기서, 웹캠의 x축은 언리얼의 y축으로, 웹캠의 y축은 언리얼의 z축으로 매핑되며,
@@ -281,7 +315,6 @@ void AAI_Pawn::UpdateHandMeshPosition(const FString& HandType, const FVector& Ne
 	// 이때, HandMeshOffsetFromCamera를 사용하여 카메라 위치에 상대적인 위치를 고려
 	FVector NewHandPositionRelativeToCamera = NewPosition + HandMeshOffsetFromCamera;
 	FVector NewWorldPosition = CameraComponent->GetComponentLocation() + NewHandPositionRelativeToCamera;
-	
 
 	// 카메라의 회전을 가져와서 손의 회전을 조정
 	FRotator CameraRotator = CameraComponent->GetComponentRotation();
@@ -294,22 +327,48 @@ void AAI_Pawn::UpdateHandMeshPosition(const FString& HandType, const FVector& Ne
 	// 핸드 메시의 새로운 위치와 조정된 회전으로 업데이트합니다.
 	HandMesh->SetWorldLocationAndRotation(NewWorldPosition , NewQuat);
 	HandMesh->SetRelativeRotation( FRotator(HandMesh->GetRelativeRotation().Pitch,270,HandMesh->GetRelativeRotation().Roll));
-
 	
     UE_LOG(LogTemp, Log, TEXT("Updated %s Hand Mesh Position to %s and Adjusted Rotation"), *HandType, *NewWorldPosition.ToString());
 }
 
-void AAI_Pawn::UpdateBonePositions(const TMap<int32, FVector>& BoneIdToPositionMap, const FString& HandType)
+void AAI_Pawn::UpdateBonePositions(const TMap<int32, FVector>& BoneIdToPositionUpdateMap, const FString& HandType)
 {
-	USkeletalMeshComponent* HandMesh = HandType.Equals("Left", ESearchCase::IgnoreCase) ? LeftHandMesh : RightHandMesh;
+	USkeletalMeshComponent* HandMesh = nullptr;
+	if (HandType.Equals("Left", ESearchCase::IgnoreCase)) {
+		HandMesh = LeftHandMesh;
+	} else if (HandType.Equals("Right", ESearchCase::IgnoreCase)) {
+		HandMesh = RightHandMesh;
+	}
+
 	if (!HandMesh) return;
 
-	for (const auto& Pair : BoneIdToPositionMap)
+	for (const auto& Pair : BoneIdToPositionUpdateMap)
 	{
 		int32 BoneId = Pair.Key;
-		FVector BonePosition = Pair.Value;
+		FVector TargetPosition = Pair.Value;
 
 		FName BoneName = GetBoneNameFromLandmarkId(BoneId, HandType);
 		if (BoneName.IsNone()) continue;
+
+		// 본의 현재 인덱스를 찾습니다.
+		int32 BoneIndex = HandMesh->GetBoneIndex(BoneName);
+		if (BoneIndex != INDEX_NONE)
+		{
+			// 본의 현재 변환을 가져옵니다.
+			FTransform BoneTransform = HandMesh->GetBoneTransform(BoneIndex);
+			// 새 위치를 설정합니다. 회전과 스케일은 변경하지 않습니다.
+			BoneTransform.SetLocation(TargetPosition);
+			
+			// FName a = "thumb_01_r"; 
+			// 컴포넌트의 본 변환을 업데이트합니다.
+			// HandMesh->SetBoneTransform(BoneIndex, BoneTransform, EBoneSpaces::ComponentSpace);
+			/*auto BoneAnim = HandMesh->SkeletalMesh->GetPostProcessAnimBlueprint();
+			BoneAnim->getFindSocket(a)->();*/
+		}
 	}
+}
+
+const TMap<int32, FVector>& AAI_Pawn::GetUpdatedBonePositions() const
+{
+    return BoneIdToPositionMap;
 }

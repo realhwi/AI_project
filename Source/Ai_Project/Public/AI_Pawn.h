@@ -31,9 +31,15 @@ public:
 	UPROPERTY(EditAnywhere , BlueprintReadOnly , Category = Input , meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* IMC_AI;
 	UPROPERTY(EditAnywhere , BlueprintReadOnly , Category = Input , meta = (AllowPrivateAccess = "true"))
-	class UInputAction* IA_Look;
-	// 카메라 회전 기능 
-	void RotateCamera(const FInputActionValue& Value);
+	class UInputAction* IA_Look_Right;
+	UPROPERTY(EditAnywhere , BlueprintReadOnly , Category = Input , meta = (AllowPrivateAccess = "true"))
+	class UInputAction* IA_Look_Left;
+	UPROPERTY(EditAnywhere , BlueprintReadOnly , Category = Input , meta = (AllowPrivateAccess = "true"))
+	class UInputAction* IA_Move;
+	// 카메라 회전 기능 (좌,우)
+	void R_RotateCamera(const FInputActionValue& Value);
+	void L_RotateCamera(const FInputActionValue& Value);
+	void Move(const FInputActionValue& Value);
 	
 	// 생성자 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Settings | Player")
@@ -48,18 +54,29 @@ public:
     // 본 ID에 따라 본 이름 가져오기
 	UFUNCTION(BlueprintCallable, Category = "Hand Tracking")
 	FName GetBoneNameFromLandmarkId(int32 LandmarkId, const FString& HandType) const;
+	
 	// 웹캠 데이터 파싱 및 핸드 트래킹 데이터 적용
 	void ParseAndApplyHandTrackingData(const FString& ReceivedData);
+	
     // 웹캠 데이터로부터 언리얼 엔진 좌표계로 변환
-	FVector ConvertPythonToUnreal(float PixelX, float PixelY, float PixelZ);	
+	UFUNCTION(BlueprintCallable, Category="Conversion")
+	FVector ConvertPythonToUnreal(float PixelX, float PixelY, float PixelZ);
+	
     // 웹캠 데이터를 기반으로 핸드 메시 위치 업데이트
 	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
 	void UpdateHandMeshPosition(const FString& HandType, const FVector& NewPosition, const FRotator& NewRotation);
-	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
-	void UpdateBonePositions(const TMap<int32, FVector>& BoneIdToPositionMap, const FString& HandType);
 	
+	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
+	void UpdateBonePositions(const TMap<int32, FVector>& LocalBoneIdToPositionMap, const FString& HandType);
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Settings | Player")
+	TMap<int32, FVector> LocalBoneIdToPositionMap; 
+
 	// 랜드마크 좌표 저장 맴버 변수 
 	TMap<int32, FVector> LandmarkIdToPositionMap;
+	TMap<int32, FVector> BoneIdToPositionMap;
+	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
+	const TMap<int32, FVector>& GetUpdatedBonePositions() const;
 	
 	FVector ReferencePosition; // 기준점 위치
 	bool bHasReference = false; // 기준점이 설정되었는지 여부
@@ -77,5 +94,5 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HandTracking")
 	float RotationSpeed = 0.1f; // 적절한 기본값 설정
-
+	
 };
