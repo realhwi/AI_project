@@ -4,9 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "AI_Pawn.h" 
 #include "AI_Anim.generated.h"
-
-//DECLARE_LOG_CATEGORY_EXTERN(LogMyAnimInstance, Log, All);
 
 UCLASS()
 class AI_PROJECT_API UAI_Anim : public UAnimInstance
@@ -15,8 +14,12 @@ class AI_PROJECT_API UAI_Anim : public UAnimInstance
 
 public:
 	
-	//virtual void NativeUpdateAnimation(float DeltaSeconds) override;
+	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
-	//FVector CalculateIKPosition(const class AAI_Pawn* Pawn, int32 LandmarkId);
-	//void SetIKTarget(const FName& BoneName, const FVector& IKPosition);
+	UPROPERTY(BlueprintReadOnly, Category = "References")
+	AAI_Pawn* MyAIPawn;
+	
+	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
+	void UpdateBonePositions();
+	
 };

@@ -64,14 +64,14 @@ public:
 	
     // 웹캠 데이터를 기반으로 핸드 메시 위치 업데이트
 	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
-	void UpdateHandMeshPosition(const FString& HandType, const FVector& NewPosition, const FRotator& NewRotation);
-	
+	void UpdateHandMeshPosition(const FString& HandType, const FVector& Position, const FRotator& Rotation);
+
 	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
 	void UpdateBonePositions(const TMap<int32, FVector>& LocalBoneIdToPositionMap, const FString& HandType);
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Settings | Player")
 	TMap<int32, FVector> LocalBoneIdToPositionMap; 
-
+	
 	// 랜드마크 좌표 저장 맴버 변수 
 	TMap<int32, FVector> LandmarkIdToPositionMap;
 	TMap<int32, FVector> BoneIdToPositionMap;
@@ -84,6 +84,8 @@ public:
 	UPROPERTY()
 	class ASocketClient* SocketClient;	
 	FVector InitialCameraLocation;     // 초기 카메라 위치
+	FRotator InitialCameraRotation; // 카메라의 초기 회전 값을 저장하는 변수
+
 	FVector HandMeshOffsetFromCamera; // 카메라로부터 핸드 메시까지의 상대적 거리
 
 	FVector InitialRightHandLocation; // 오른손 초기 위치
@@ -94,5 +96,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HandTracking")
 	float RotationSpeed = 0.1f; // 적절한 기본값 설정
-	
+	void UpdateHandMeshPositionBasedOnCamera();
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hand")
+	float DistanceFromCamera; // 카메라로부터 손목까지의 거리
 };

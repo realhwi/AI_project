@@ -9,11 +9,11 @@
   <component name="ChangeListManager">
     <list default="true" id="c747c5fe-8c3d-420e-a667-16b0a6a9d332" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Ai_Project.dir/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Ai_Project.dir/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/Blueprints/BP_AI_Pawn.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Blueprints/BP_AI_Pawn.uasset" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Content/Characters/MannequinsXR/Meshes/ABP_MannequinsXR.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Characters/MannequinsXR/Meshes/ABP_MannequinsXR.uasset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/Input/Actions/IA_Look.uasset" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/Input/IMC_AI.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Input/IMC_AI.uasset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/Maps/TestMaps.umap" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Maps/TestMaps.umap" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/Ai_Project/Private/AI_Anim.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Ai_Project/Private/AI_Anim.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Source/Ai_Project/Private/AI_Pawn.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Ai_Project/Private/AI_Pawn.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/Ai_Project/Public/AI_Anim.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Ai_Project/Public/AI_Anim.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Source/Ai_Project/Public/AI_Pawn.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Ai_Project/Public/AI_Pawn.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -134,6 +134,7 @@
       <workItem from="1712724869685" duration="7870000" />
       <workItem from="1712914361151" duration="772000" />
       <workItem from="1712934423736" duration="42000" />
+      <workItem from="1713156069650" duration="1191000" />
     </task>
     <servers />
   </component>
