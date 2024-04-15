@@ -33,7 +33,7 @@ void ASocketClient::ConnectToServer()
     ISocketSubsystem* SocketSubsystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
     if (SocketSubsystem)
     {
-        if (Socket == nullptr) // ¼ÒÄÏÀÌ ¾ÆÁ÷ »ı¼ºµÇÁö ¾Ê¾Ò´Ù¸é »ı¼ºÇÕ´Ï´Ù.
+        if (Socket == nullptr) // ì†Œì¼“ì´ ì•„ì§ ìƒì„±ë˜ì§€ ì•Šì•˜ë‹¤ë©´ ìƒì„±í•©ë‹ˆë‹¤.
         {
             Socket = SocketSubsystem->CreateSocket(NAME_Stream, TEXT("default"), false);
             if (Socket == nullptr) {
@@ -42,10 +42,10 @@ void ASocketClient::ConnectToServer()
             }
         }
 
-        // ¼ÒÄÏÀÌ ¼º°øÀûÀ¸·Î »ı¼ºµÇ¾ú´ÂÁö È®ÀÎÇÕ´Ï´Ù.
+        // ì†Œì¼“ì´ ì„±ê³µì ìœ¼ë¡œ ìƒì„±ë˜ì—ˆëŠ”ì§€ í™•ì¸í•©ë‹ˆë‹¤.
         if (Socket != nullptr)
         {
-            // IP ÁÖ¼Ò¿Í Æ÷Æ®¸¦ »ç¿ëÇÏ¿© ¼ÒÄÏ ¿¬°á ½Ãµµ
+            // IP ì£¼ì†Œì™€ í¬íŠ¸ë¥¼ ì‚¬ìš©í•˜ì—¬ ì†Œì¼“ ì—°ê²° ì‹œë„
             bool bIsValidIP = FIPv4Address::Parse(Address, IP);
             if (bIsValidIP)
             {
@@ -53,33 +53,33 @@ void ASocketClient::ConnectToServer()
                 Addr->SetIp(IP.Value);
                 Addr->SetPort(Port);
                 bool bConnected = Socket->Connect(*Addr);
-                // ¿¬°á ¼º°ø ¿©ºÎ¿¡ µû¶ó ÈÄ¼Ó Ã³¸®
+                // ì—°ê²° ì„±ê³µ ì—¬ë¶€ì— ë”°ë¼ í›„ì† ì²˜ë¦¬
                 if (bConnected)
                 {
-                    // ¿¬°á¿¡ ¼º°øÇß½À´Ï´Ù.
+                    // ì—°ê²°ì— ì„±ê³µí–ˆìŠµë‹ˆë‹¤.
                     UE_LOG(LogTemp, Log, TEXT("Connected to server!"));
                 }
                 else
                 {
-                    // ¿¬°á¿¡ ½ÇÆĞÇß½À´Ï´Ù.
+                    // ì—°ê²°ì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.
                     UE_LOG(LogTemp, Warning, TEXT("Failed to connect to server."));
                 }
             }
             else
             {
-                // IP ÁÖ¼Ò°¡ À¯È¿ÇÏÁö ¾Ê½À´Ï´Ù.
+                // IP ì£¼ì†Œê°€ ìœ íš¨í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.
                 UE_LOG(LogTemp, Warning, TEXT("Invalid IP Address."));
             }
         }
         else
         {
-            // ¼ÒÄÏ »ı¼º¿¡ ½ÇÆĞÇß½À´Ï´Ù.
+            // ì†Œì¼“ ìƒì„±ì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.
             UE_LOG(LogTemp, Warning, TEXT("Could not create socket."));
         }
     }
     else
     {
-        // ¼ÒÄÏ ½Ã½ºÅÛ ¼­ºê½Ã½ºÅÛÀ» °¡Á®¿ÀÁö ¸øÇß½À´Ï´Ù.
+        // ì†Œì¼“ ì‹œìŠ¤í…œ ì„œë¸Œì‹œìŠ¤í…œì„ ê°€ì ¸ì˜¤ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.
         UE_LOG(LogTemp, Error, TEXT("Could not get socket subsystem."));
     }
 }
@@ -91,11 +91,11 @@ bool ASocketClient::SendData(const FString& Message)
         return false;
     }
     
-    // ¹®ÀÚ¿­À» UTF-8·Î ÀÎÄÚµùÇÕ´Ï´Ù.
+    // ë¬¸ìì—´ì„ UTF-8ë¡œ ì¸ì½”ë”©í•©ë‹ˆë‹¤.
     FTCHARToUTF8 Convert(*Message);
     int32 BytesSent = 0;
     
-    // µ¥ÀÌÅÍ¸¦ Àü¼ÛÇÏ°í ¼º°ø ¿©ºÎ¸¦ ¹İÈ¯ÇÕ´Ï´Ù.
+    // ë°ì´í„°ë¥¼ ì „ì†¡í•˜ê³  ì„±ê³µ ì—¬ë¶€ë¥¼ ë°˜í™˜í•©ë‹ˆë‹¤.
     bool bSuccess = Socket->Send((uint8*)Convert.Get(), Convert.Length(), BytesSent);
     return bSuccess;
 }
@@ -107,28 +107,28 @@ bool ASocketClient::ReceiveData(FString& OutMessage)
         return false;
     }
 
-    // ¹öÆÛ »çÀÌÁî¸¦ Á¤ÀÇÇÕ´Ï´Ù.
+    // ë²„í¼ ì‚¬ì´ì¦ˆë¥¼ ì •ì˜í•©ë‹ˆë‹¤.
     const int32 BufferSize = 4096;
     uint8 ReceiveBuffer[BufferSize];
     int32 BytesRead = 0;
     
-    // µ¥ÀÌÅÍ¸¦ ¼ö½ÅÇÏ°í ¼º°ø ¿©ºÎ¸¦ È®ÀÎÇÕ´Ï´Ù.
+    // ë°ì´í„°ë¥¼ ìˆ˜ì‹ í•˜ê³  ì„±ê³µ ì—¬ë¶€ë¥¼ í™•ì¸í•©ë‹ˆë‹¤.
     bool bHasData = Socket->HasPendingData((uint32&)BytesRead);
-    if (bHasData && BytesRead > 0) // µ¥ÀÌÅÍ°¡ ÀÖ°í, ÀĞÀ» ¹ÙÀÌÆ®°¡ ÀÖÀ¸¸é
+    if (bHasData && BytesRead > 0) // ë°ì´í„°ê°€ ìˆê³ , ì½ì„ ë°”ì´íŠ¸ê°€ ìˆìœ¼ë©´
     {
         bool bReceived = Socket->Recv(ReceiveBuffer, BufferSize, BytesRead, ESocketReceiveFlags::None);
         if (bReceived && BytesRead > 0)
         {
-            // ¼ö½ÅÇÑ µ¥ÀÌÅÍ¸¦ FStringÀ¸·Î º¯È¯ÇÕ´Ï´Ù.
-            // UTF8_TO_TCHAR·Î º¯È¯ÇÒ ¶§ ½ÇÁ¦·Î ÀĞÀº ¹ÙÀÌÆ®¸¸Å­¸¸ Ã³¸®ÇÕ´Ï´Ù.
+            // ìˆ˜ì‹ í•œ ë°ì´í„°ë¥¼ FStringìœ¼ë¡œ ë³€í™˜í•©ë‹ˆë‹¤.
+            // UTF8_TO_TCHARë¡œ ë³€í™˜í•  ë•Œ ì‹¤ì œë¡œ ì½ì€ ë°”ì´íŠ¸ë§Œí¼ë§Œ ì²˜ë¦¬í•©ë‹ˆë‹¤.
             FString ReceivedString = FString(UTF8_TO_TCHAR(reinterpret_cast<char*>(ReceiveBuffer))).Left(BytesRead);
             OutMessage = ReceivedString;
-            UE_LOG(LogTemp, Log, TEXT("Received Data: %s"), *OutMessage); // ·Î±× À§Ä¡ º¯°æ
+            UE_LOG(LogTemp, Log, TEXT("Received Data: %s"), *OutMessage); // ë¡œê·¸ ìœ„ì¹˜ ë³€ê²½
             return true;
         }
     }
 
-    return false; // µ¥ÀÌÅÍ ¼ö½Å¿¡ ½ÇÆĞÇÏ¸é false ¹İÈ¯
+    return false; // ë°ì´í„° ìˆ˜ì‹ ì— ì‹¤íŒ¨í•˜ë©´ false ë°˜í™˜
 }
 
 
