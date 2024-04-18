@@ -9,8 +9,7 @@
   <component name="ChangeListManager">
     <list default="true" id="c747c5fe-8c3d-420e-a667-16b0a6a9d332" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Ai_Project.dir/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Ai_Project.dir/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/Characters/MannequinsXR/Meshes/ABP_MannequinsXR.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Characters/MannequinsXR/Meshes/ABP_MannequinsXR.uasset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Content/Maps/TestMaps.umap" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Maps/TestMaps.umap" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/Ai_Project/Ai_Project.Build.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Ai_Project/Ai_Project.Build.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Source/Ai_Project/Private/AI_Anim.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Ai_Project/Private/AI_Anim.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Source/Ai_Project/Private/AI_Pawn.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Ai_Project/Private/AI_Pawn.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Source/Ai_Project/Public/AI_Anim.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/Ai_Project/Public/AI_Anim.h" afterDir="false" />
@@ -35,28 +34,28 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;Uproject.Ai_Project.executor&quot;: &quot;Run&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;0411__KJH&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;editor.preferences.tabs&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "Uproject.Ai_Project.executor": "Debug",
+    "git-widget-placeholder": "0411__KJH",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "editor.preferences.tabs",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;rider.external.source.directories&quot;: [
-      &quot;C:\\Users\\ASUS\\AppData\\Roaming\\JetBrains\\Rider2023.3\\resharper-host\\DecompilerCache&quot;,
-      &quot;C:\\Users\\ASUS\\AppData\\Roaming\\JetBrains\\Rider2023.3\\resharper-host\\SourcesCache&quot;,
-      &quot;C:\\Users\\ASUS\\AppData\\Local\\Symbols\\src&quot;
+  "keyToStringList": {
+    "rider.external.source.directories": [
+      "C:\\Users\\ASUS\\AppData\\Roaming\\JetBrains\\Rider2023.3\\resharper-host\\DecompilerCache",
+      "C:\\Users\\ASUS\\AppData\\Roaming\\JetBrains\\Rider2023.3\\resharper-host\\SourcesCache",
+      "C:\\Users\\ASUS\\AppData\\Local\\Symbols\\src"
     ]
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration name="Ai_Project" type="Uproject" factoryName="rider.uproject">
       <option name="PROJECT_FILE_PATH" value="$PROJECT_DIR$/Ai_Project.uproject" />
@@ -135,6 +134,8 @@
       <workItem from="1712914361151" duration="772000" />
       <workItem from="1712934423736" duration="42000" />
       <workItem from="1713156069650" duration="1191000" />
+      <workItem from="1713197291472" duration="479000" />
+      <workItem from="1713264555849" duration="153000" />
     </task>
     <servers />
   </component>

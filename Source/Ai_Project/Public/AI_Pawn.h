@@ -47,10 +47,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Settings | Player")
 	class USpringArmComponent* SpringArmComponent;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Settings | Player")
-	class USkeletalMeshComponent* LeftHandMesh;
+	class UPoseableMeshComponent* LeftHandMesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Settings | Player")
-	class USkeletalMeshComponent* RightHandMesh;
+	class UPoseableMeshComponent* RightHandMesh;
 
+	// 본의 초기 로컬 위치를 저장하는 맵
+	UPROPERTY(BlueprintReadOnly, Category = "HandTracking")
+	TMap<int32, FVector> InitialBoneLocalPositions;
+	
     // 본 ID에 따라 본 이름 가져오기
 	UFUNCTION(BlueprintCallable, Category = "Hand Tracking")
 	FName GetBoneNameFromLandmarkId(int32 LandmarkId, const FString& HandType) const;
@@ -68,16 +72,29 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
 	void UpdateBonePositions(const TMap<int32, FVector>& LocalBoneIdToPositionMap, const FString& HandType);
-	
+
+	// 본 위치를 업데이트하는 데 사용될 맵
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Settings | Player")
-	TMap<int32, FVector> LocalBoneIdToPositionMap; 
+	TMap<int32, FVector> LocalBoneIdToPositionMap;
 	
-	// 랜드마크 좌표 저장 맴버 변수 
+	// 랜드마크 ID를 기반으로 한 본 위치를 저장하는 맵
+	UPROPERTY(BlueprintReadOnly, Category = "HandTracking")
 	TMap<int32, FVector> LandmarkIdToPositionMap;
+	
+	// 랜드마크 ID를 기반으로 한 본 위치를 저장하는 맵
+	UPROPERTY(BlueprintReadOnly, Category = "HandTracking")
 	TMap<int32, FVector> BoneIdToPositionMap;
+
+	// 본 업데이트 함수들
 	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
 	const TMap<int32, FVector>& GetUpdatedBonePositions() const;
+
+	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
+	void UpdateHandMeshPositionBasedOnCamera();
 	
+    UFUNCTION(BlueprintCallable, Category="Hand Tracking")
+	void UpdateFingerRotations(const FString& HandType);
+
 	FVector ReferencePosition; // 기준점 위치
 	bool bHasReference = false; // 기준점이 설정되었는지 여부
 	
@@ -85,9 +102,7 @@ public:
 	class ASocketClient* SocketClient;	
 	FVector InitialCameraLocation;     // 초기 카메라 위치
 	FRotator InitialCameraRotation; // 카메라의 초기 회전 값을 저장하는 변수
-
 	FVector HandMeshOffsetFromCamera; // 카메라로부터 핸드 메시까지의 상대적 거리
-
 	FVector InitialRightHandLocation; // 오른손 초기 위치
 	FRotator InitialRightHandRotation; // 오른손의 초기 회전
 	FVector InitialLeftHandLocation; // 왼손의 초기 위치
@@ -96,7 +111,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HandTracking")
 	float RotationSpeed = 0.1f; // 적절한 기본값 설정
-	void UpdateHandMeshPositionBasedOnCamera();
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hand")
 	float DistanceFromCamera; // 카메라로부터 손목까지의 거리
 };

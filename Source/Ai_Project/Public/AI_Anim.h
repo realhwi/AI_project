@@ -18,8 +18,4 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "References")
 	AAI_Pawn* MyAIPawn;
-	
-	UFUNCTION(BlueprintCallable, Category="Hand Tracking")
-	void UpdateBonePositions();
-	
 };

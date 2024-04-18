@@ -2,7 +2,6 @@
 
 
 #include "AI_Pawn.h"
-
 #include "ComponentReregisterContext.h"
 #include "EngineUtils.h"
 #include "Camera/CameraComponent.h"
@@ -10,6 +9,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h"
 #include "SocketClient.h"
+#include "Components/PoseableMeshComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 
 
@@ -18,6 +18,9 @@ AAI_Pawn::AAI_Pawn()
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	LeftHandMesh = CreateDefaultSubobject<UPoseableMeshComponent>(TEXT("LeftHandMesh"));
+	RightHandMesh = CreateDefaultSubobject<UPoseableMeshComponent>(TEXT("RightHandMesh"));
 
 	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
 	SpringArmComponent->SetupAttachment(GetRootComponent());
@@ -41,27 +44,28 @@ AAI_Pawn::AAI_Pawn()
 		InitialCameraLocation = CurrentCameraLocation;
 		InitialCameraRotation = CurrentCameraRotation;
 	}
-
+	
+	LeftHandMesh->SetupAttachment(CameraComponent);
+	RightHandMesh->SetupAttachment(CameraComponent);
+	
 	//Hand Mesh
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> LeftHandMeshAsset(TEXT(
 		"/Script/Engine.SkeletalMesh'/Game/Characters/MannequinsXR/Meshes/SKM_MannyXR_left.SKM_MannyXR_left'"));
 	if (LeftHandMeshAsset.Succeeded())
 	{
-		LeftHandMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Left Hand Mesh"));
-		LeftHandMesh->SetSkeletalMesh(LeftHandMeshAsset.Object);
-		LeftHandMesh->SetupAttachment(CameraComponent);
+		LeftHandMesh->SetSkeletalMesh(LeftHandMeshAsset.Object, true); // 'true'는 필요한 경우 디펜던시를 자동으로 로드합니다.
 		LeftHandMesh->SetRelativeLocation(HandRelativeLocation);
+		LeftHandMesh->SetRelativeLocationAndRotation(FVector(30.0f, 0.0f, 0.0f), FRotator(0.0f, 0.0f, -90.0f));
 	}
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> RightHandMeshAsset(TEXT(
 		"/Script/Engine.SkeletalMesh'/Game/Characters/MannequinsXR/Meshes/SKM_MannyXR_right.SKM_MannyXR_right'"));
 	if (RightHandMeshAsset.Succeeded())
 	{
-		RightHandMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Right Hand Mesh"));
-		RightHandMesh->SetSkeletalMesh(RightHandMeshAsset.Object);
-		RightHandMesh->SetupAttachment(CameraComponent);
+		RightHandMesh->SetSkeletalMesh(RightHandMeshAsset.Object, true); // 마찬가지로 'true'를 추가
 		RightHandMesh->SetRelativeLocation(HandRelativeLocation);
+		RightHandMesh->SetRelativeLocationAndRotation(FVector(30.0f, 0.0f, 0.0f), FRotator(0.0f, 0.0f, -90.0f));
 	}
-	//SocketClient = CreateDefaultSubobject<ASocketClient> (TEXT("SocketClient")); // ASocketClient 인스턴스를 얻는 코드
+	
 }
 
 void AAI_Pawn::UpdateHandMeshPositionBasedOnCamera()
@@ -113,6 +117,24 @@ void AAI_Pawn::BeginPlay()
 	UE_LOG(LogTemp, Log, TEXT("Hand Mesh Offset From Camera: %s"), *HandMeshOffsetFromCamera.ToString());
 
 	UE_LOG(LogTemp, Warning, TEXT("AI_Pawn Instance Name: %s"), *GetName());
+
+	// 본 위치 초기화
+	for (int32 i = 0; i < RightHandMesh->GetNumBones(); ++i)
+	{
+		FName BoneName = RightHandMesh->GetBoneName(i);
+		FVector BoneLocation = RightHandMesh->GetBoneLocationByName(BoneName, EBoneSpaces::ComponentSpace);
+		FRotator BoneRotation = RightHandMesh->GetBoneQuaternion(BoneName, EBoneSpaces::ComponentSpace).Rotator();
+		InitialBoneLocalPositions.Add(i, RightHandMesh->GetBoneLocationByName(BoneName, EBoneSpaces::ComponentSpace));
+		UE_LOG(LogTemp, Log, TEXT("RightHandMesh Bone %s initial component space position: %s, rotation: %s"), *BoneName.ToString(), *BoneLocation.ToString(), *BoneRotation.ToString());
+	}
+	for (int32 i = 0; i < LeftHandMesh->GetNumBones(); ++i)
+	{
+		FName BoneName = LeftHandMesh->GetBoneName(i);
+		FVector BoneLocation = LeftHandMesh->GetBoneLocationByName(BoneName, EBoneSpaces::ComponentSpace);
+		FRotator BoneRotation = LeftHandMesh->GetBoneQuaternion(BoneName, EBoneSpaces::ComponentSpace).Rotator();
+		InitialBoneLocalPositions.Add(i, LeftHandMesh->GetBoneLocationByName(BoneName, EBoneSpaces::ComponentSpace));
+		UE_LOG(LogTemp, Log, TEXT("LeftHandMesh Bone %s initial component space position: %s, rotation: %s"), *BoneName.ToString(), *BoneLocation.ToString(), *BoneRotation.ToString());
+	}
 }
 
 // Called every frame
@@ -288,6 +310,7 @@ void AAI_Pawn::ParseAndApplyHandTrackingData(const FString& ReceivedData)
 
 					FVector UnrealPosition = ConvertPythonToUnreal(X, Y, Z);
 					FVector WorldPosition = CameraComponent->GetComponentTransform().TransformPosition(UnrealPosition);
+					LandmarkIdToPositionMap.Add(Id, WorldPosition); // 맵 업데이트
 
 					// 초기 손 위치에 대한 웹캠 데이터의 상대 위치 적용
 					FVector InitialHandLocation;
@@ -321,6 +344,7 @@ void AAI_Pawn::ParseAndApplyHandTrackingData(const FString& ReceivedData)
 					FRotator AverageRotation; // 평균 회전 계산 로직 필요
 					UpdateHandMeshPosition(HandType, AveragePosition, AverageRotation);
 					UpdateBonePositions(this->LocalBoneIdToPositionMap, HandType);
+					UpdateFingerRotations(HandType); // 손가락 회전 업데이트
 				}
 			}
 		}
@@ -360,9 +384,9 @@ FVector AAI_Pawn::ConvertPythonToUnreal(float PixelX, float PixelY, float PixelZ
 
 void AAI_Pawn::UpdateHandMeshPosition(const FString& HandType, const FVector& NewPosition, const FRotator& NewRotation)
 {
-	if (!CameraComponent || !LeftHandMesh || !RightHandMesh) return;
+	if (!CameraComponent) return;
 
-	USkeletalMeshComponent* HandMesh = nullptr;
+	UPoseableMeshComponent* HandMesh = nullptr;
 	if (HandType.Equals("Left", ESearchCase::IgnoreCase))
 	{
 		HandMesh = LeftHandMesh;
@@ -372,14 +396,14 @@ void AAI_Pawn::UpdateHandMeshPosition(const FString& HandType, const FVector& Ne
 		HandMesh = RightHandMesh;
 	}
 	if (!HandMesh) return;
-
+	
 	// 웹캠 데이터 기반으로 계산된 핸드 메시의 새로운 위치를 계산
 	// 이때, HandMeshOffsetFromCamera를 사용하여 카메라 위치에 상대적인 위치를 고려
 	FVector NewHandPositionRelativeToCamera = NewPosition + HandMeshOffsetFromCamera;
 	FVector NewWorldPosition = CameraComponent->GetComponentLocation() + NewHandPositionRelativeToCamera;
 
 	// 카메라의 회전을 가져와서 손의 회전을 조정
-	FRotator CameraRotator = CameraComponent->GetComponentRotation();
+	FRotator CameraRotator = CameraComponent->GetComponentRotation().GetNormalized();
 	FRotator HandRotation = FRotator(-CameraRotator.Pitch, CameraRotator.Yaw, -CameraRotator.Roll);
 
 	// 손 메시의 최종 회전을 결정하기 위해 카메라 회전과 손의 실제 회전을 보간
@@ -408,35 +432,59 @@ const TMap<int32, FVector>& AAI_Pawn::GetUpdatedBonePositions() const
 
 void AAI_Pawn::UpdateBonePositions(const TMap<int32, FVector>& BoneIdToPositionUpdateMap, const FString& HandType)
 {
-	USkeletalMeshComponent* HandMesh = nullptr;
-	if (HandType.Equals("Left", ESearchCase::IgnoreCase))
-	{
-		HandMesh = LeftHandMesh;
-	}
-	else if (HandType.Equals("Right", ESearchCase::IgnoreCase))
-	{
-		HandMesh = RightHandMesh;
-	}
+	UPoseableMeshComponent* PoseableMesh = (HandType.Equals("Left", ESearchCase::IgnoreCase)) ? LeftHandMesh : RightHandMesh;
+	if (!PoseableMesh) return;
 
-	if (!HandMesh) return;
+	int32 BaseId = HandType.Equals("Left", ESearchCase::IgnoreCase) ? 1000 : 0;
 
 	for (const auto& Pair : BoneIdToPositionUpdateMap)
 	{
-		int32 BoneId = Pair.Key;
-		FVector TargetPosition = Pair.Value;
-
-		FName BoneName = GetBoneNameFromLandmarkId(BoneId, HandType);
-		UE_LOG(LogTemp, Warning, TEXT("Bone ID: %d, Bone Name: %s, Target Position: %s"), BoneId, *BoneName.ToString(), *TargetPosition.ToString());
-
-		if (BoneName.IsNone()) continue;
-
-		// 부모 소켓의 위치를 가져옵니다.
-		FVector ParentSocketLocation = HandMesh->GetSocketLocation(BoneName);
+		int32 BoneId = Pair.Key + BaseId;
+		FName BoneName = GetBoneNameFromLandmarkId(BoneId - BaseId, HandType);
+		FVector Position = Pair.Value;
         
-		// 변경된 위치와 현재 위치의 차이를 구합니다.
-		FVector DeltaPosition = TargetPosition - ParentSocketLocation;
+		// 초기 로컬 위치 및 회전
+		FVector InitialLocalPosition = InitialBoneLocalPositions.Contains(BoneId) ? InitialBoneLocalPositions[BoneId] : FVector::ZeroVector;
+		FRotator InitialLocalRotation = PoseableMesh->GetBoneQuaternion(BoneName, EBoneSpaces::ComponentSpace).Rotator();
         
-		// 각 본의 부모 소켓을 이동하여 위치를 조정합니다.
-		HandMesh->MoveComponent(DeltaPosition, FRotator::ZeroRotator, false);
+		// 로그: 업데이트 전 위치 및 회전
+		UE_LOG(LogTemp, Log, TEXT("Bone %s (before update) - Component Space Position: %s, Rotation: %s"),
+			   *BoneName.ToString(), *InitialLocalPosition.ToString(), *InitialLocalRotation.ToString());
+
+		// 업데이트된 위치 및 회전
+		FVector AdjustedPosition = Position - (BoneIdToPositionUpdateMap[0] - InitialLocalPosition);
+
+		// 로그: 업데이트 후 예상되는 위치 및 회전
+		UE_LOG(LogTemp, Log, TEXT("Bone %s (after update) - Expected Component Space Position: %s"),
+			   *BoneName.ToString(), *AdjustedPosition.ToString());
+
+		// 본 위치 설정
+		FTransform NewTransform;
+		NewTransform.SetLocation(AdjustedPosition);
+		NewTransform.SetRotation(FQuat::Identity);  // Note: 실제 회전값이 필요한 경우 이 부분을 수정해야 합니다.
+		PoseableMesh->SetBoneTransformByName(BoneName, NewTransform, EBoneSpaces::ComponentSpace);
+	}
+}
+
+void AAI_Pawn::UpdateFingerRotations(const FString& HandType)
+{
+	UPoseableMeshComponent* PoseableMesh = (HandType == "Right") ? RightHandMesh : LeftHandMesh;
+    if (!PoseableMesh) return;
+	
+	FVector WristLocalPosition = FVector::ZeroVector;
+	if (LocalBoneIdToPositionMap.Contains(0))
+	{
+		WristLocalPosition = LocalBoneIdToPositionMap[0];
+	}
+	for (int32 i = 1; i < LandmarkIdToPositionMap.Num(); ++i)
+	{
+		FVector Direction = (LandmarkIdToPositionMap[i] - LandmarkIdToPositionMap[0]).GetSafeNormal();
+		FRotator BoneRotator = Direction.Rotation();
+
+		FName BoneName = GetBoneNameFromLandmarkId(i, HandType); // 본 이름을 랜드마크 ID를 기반으로 가져옵니다.
+		FTransform BoneTransform = PoseableMesh->GetBoneTransformByName(BoneName, EBoneSpaces::ComponentSpace);
+
+		BoneTransform.SetRotation(FQuat(BoneRotator));
+		PoseableMesh->SetBoneTransformByName(BoneName, BoneTransform, EBoneSpaces::ComponentSpace);
 	}
 }
