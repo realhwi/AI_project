@@ -452,7 +452,8 @@ void AAI_Pawn::UpdateBonePositions(const TMap<int32, FVector>& BoneIdToPositionU
 			   *BoneName.ToString(), *InitialLocalPosition.ToString(), *InitialLocalRotation.ToString());
 
 		// 업데이트된 위치 및 회전
-		FVector AdjustedPosition = Position - (BoneIdToPositionUpdateMap[0] - InitialLocalPosition);
+		//FVector AdjustedPosition = Position - (BoneIdToPositionUpdateMap[0] - InitialLocalPosition);
+		FVector AdjustedPosition = Position - (BoneIdToPositionUpdateMap[0]);
 
 		// 로그: 업데이트 후 예상되는 위치 및 회전
 		UE_LOG(LogTemp, Log, TEXT("Bone %s (after update) - Expected Component Space Position: %s"),
